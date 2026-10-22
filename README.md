@@ -1,2 +1,2 @@
-# PMK---A2
-HotWireCamSoftware
+# HotWireCAMSoftware
+PMK-A2
