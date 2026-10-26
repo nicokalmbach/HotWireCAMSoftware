@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101923">
+    <title>HotWireCamSoftware</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" aria-label="Hauptnavigation">
+            <a class="brand" href="/" aria-label="HotWireCamSoftware Startseite">
+                <span class="brand-mark" aria-hidden="true">HW</span>
+                <span class="brand-name">HotWire<span>CAM</span></span>
+            </a>
+
+            <div class="nav-label">Arbeitsbereich</div>
+            <nav>
+                <a class="nav-link active" href="#uebersicht" aria-current="page">
+                    <span class="nav-icon" aria-hidden="true">01</span> Übersicht
+                </a>
+                <a class="nav-link" href="#profilimport">
+                    <span class="nav-icon" aria-hidden="true">02</span> Profilimport
+                </a>
+                <a class="nav-link" href="#vorschau">
+                    <span class="nav-icon" aria-hidden="true">03</span> Schneidvorschau
+                </a>
+                <a class="nav-link" href="#gcode">
+                    <span class="nav-icon" aria-hidden="true">04</span> G-Code-Export
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span>Lokaler Entwurf</span>
+            </div>
+        </aside>
+
+        <main class="main-content" id="uebersicht">
+            <header class="topbar">
+                <div class="breadcrumb">Projekt <span>/</span> Arbeitsbereich</div>
+                <div class="prototype-badge">
+                    <span aria-hidden="true">!</span> Prototyp – keine Maschinensteuerung
+                </div>
+            </header>
+
+            <section class="page-heading">
+                <div>
+                    <p class="eyebrow">PROJEKT: METHODEN UND KREATIVITÄT</p>
+                    <h1>HotWireCamSoftware</h1>
+                    <p class="intro">Arbeitsbereich für die Vorbereitung von Heißdraht-Schnittdaten.</p>
+                </div>
+                <div class="project-chip"><span class="status-dot" aria-hidden="true"></span> Lokale Umgebung</div>
+            </section>
+
+            <section class="notice" aria-label="Hinweis zum Entwicklungsstand">
+                <span class="notice-icon" aria-hidden="true">i</span>
+                <p><strong>Grundgerüst in Entwicklung.</strong> Die angezeigten Bereiche sind Platzhalter.
+                    Es werden keine Maschinendaten verarbeitet und keine Bewegungen oder Maschinenbefehle ausgeführt.</p>
+            </section>
+
+            <section class="workflow" aria-label="CAM-Arbeitsablauf">
+                <article class="panel import-panel" id="profilimport">
+                    <div class="panel-heading">
+                        <div class="step-number">01</div>
+                        <div>
+                            <p class="eyebrow">EINGABE</p>
+                            <h2>Profilimport</h2>
+                        </div>
+                        <span class="coming-soon">Platzhalter</span>
+                    </div>
+                    <div class="dropzone">
+                        <div class="upload-icon" aria-hidden="true">↑</div>
+                        <h3>Profildatei hinzufügen</h3>
+                        <p>Import und unterstützte Dateiformate sind noch nicht implementiert.</p>
+                        <button class="button button-muted" type="button" disabled>Demnächst verfügbar</button>
+                    </div>
+                    <p class="panel-footnote">Noch keine Datei ausgewählt</p>
+                </article>
+
+                <article class="panel settings-panel">
+                    <div class="panel-heading">
+                        <div class="step-number">02</div>
+                        <div>
+                            <p class="eyebrow">VORBEREITUNG</p>
+                            <h2>Profileinstellungen</h2>
+                        </div>
+                        <span class="coming-soon">Platzhalter</span>
+                    </div>
+                    <div class="empty-state">
+                        <div class="settings-icon" aria-hidden="true">⌘</div>
+                        <h3>Einstellungen folgen</h3>
+                        <p>Skalierung und Positionierung werden ergänzt, sobald die Anforderungen abgestimmt sind.</p>
+                    </div>
+                    <div class="setting-row">
+                        <span>Profil und Schnittparameter</span>
+                        <span class="unavailable">Nicht verfügbar</span>
+                    </div>
+                </article>
+            </section>
+
+            <section class="panel preview-panel" id="vorschau">
+                <div class="panel-heading preview-heading">
+                    <div class="step-number">03</div>
+                    <div>
+                        <p class="eyebrow">ANSICHT</p>
+                        <h2>Schneidvorschau</h2>
+                    </div>
+                    <span class="coming-soon">Platzhalter</span>
+                </div>
+                <div class="preview-canvas" role="img" aria-label="Leere Vorschau. Eine Profilvisualisierung ist noch nicht implementiert.">
+                    <div class="canvas-label">VORSCHAU</div>
+                    <div class="canvas-empty">
+                        <span class="preview-icon" aria-hidden="true">◇</span>
+                        <strong>Noch keine Schnittgeometrie</strong>
+                        <span>Die Profilvisualisierung wird später ergänzt.</span>
+                    </div>
+                    <span class="axis-label axis-x">X</span>
+                    <span class="axis-label axis-y">Y</span>
+                    <span class="axis-label axis-u">U</span>
+                    <span class="axis-label axis-v">V</span>
+                </div>
+            </section>
+
+            <section class="panel export-panel" id="gcode">
+                <div class="export-copy">
+                    <div class="step-number">04</div>
+                    <div>
+                        <p class="eyebrow">AUSGABE</p>
+                        <h2>G-Code-Export</h2>
+                        <p>Erzeugung und Export von G-Code sind noch nicht implementiert.</p>
+                    </div>
+                </div>
+                <button class="button button-primary" type="button" disabled>G-Code exportieren</button>
+            </section>
+
+            <footer class="page-footer">
+                <span>Version {{ app_version }}</span>
+                <span>HotWireCamSoftware <span class="footer-separator">·</span> Hochschulprojekt A2</span>
+                <span>Entwicklungsstand: Grundgerüst</span>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>
