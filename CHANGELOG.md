@@ -9,6 +9,19 @@ keinen Versionswechsel.
 
 ### Ergänzt
 
+- Zwei SVG-/DXF-Dateien mit Konturauswahl und Einheitenumrechnung importieren.
+- Nutzerdefinierter Schneidraum, Lage der Profilebenen, Positionierung, Skalierung,
+  Start-/Endpunkte und Laufrichtung für XY und UV.
+- Gemeinsame Liniensequenzen mit Erhalt der Ecken für unterschiedliche Profile.
+- Vollständiges Nennprogramm vor nachgelagerter Abbrandkorrektur; Außen-/Innenkonturen,
+  offene Links-/Rechtswege und Lochwerkzeug mit geradliniger Ein-/Ausfahrt.
+- Raum- und Achsprojektionsprüfung, Kollaps-/Überschneidungsprüfung mit 21 Zwischenquerschnitten.
+- Canvas-Drahtmodell mit XY-/UV-Ansicht, Schrittregler und Bewegungswiedergabe.
+- Generischer XYUV-G-Code-Export mit konfigurierbarer Prozentleistung über M3/S;
+  reale Stromregelung und Firmware-Zuordnung bleiben Hardwareaufgaben.
+- Demogeometrie, SVG-Beispieldateien sowie automatisierte Import-, Geometrie-, API-
+  und optionale Edge-Browserprüfungen. Änderungen verwerfen veraltete Exporte.
+- Geometrie-Abhängigkeiten ezdxf, svgelements und Shapely.
 - Technische Dokumentation für Architektur, Installation, Fehlerbehebung und Roadmap.
 - Arbeitsregeln zur begleitenden Dokumentationspflege in `AGENTS.md`.
 - `.gitignore` um IDE-Einstellungen, temporäre Dateien, lokale

@@ -12,7 +12,17 @@ Die folgenden Hinweise beziehen sich auf den lokalen Start unter Windows/PowerSh
 | Browser kann die Seite nicht öffnen | Prüfen, ob der Server ohne Fehlermeldung läuft, und `http://127.0.0.1:5000` verwenden. |
 | Gestaltung fehlt oder bleibt veraltet | Seite mit `Strg+F5` neu laden und prüfen, ob `static/css/style.css` vorhanden ist. |
 | Angezeigte Version bleibt unverändert | `version.py` speichern, den Server beenden und erneut starten. |
-| Import oder Export reagiert nicht | Diese Bereiche sind derzeit deaktivierte Platzhalter. Den Status in der Roadmap prüfen. |
+| Import schlägt fehl | SVG oder ASCII-DXF mit unterstützten Konturen verwenden. Text in Pfade umwandeln, DXF-Blöcke auflösen. Z muss 0 sein; Details zum Formatumfang stehen in ARCHITECTURE.md. Maximal 4 MiB pro Anfrage und 20000 Punkte je Profil. |
+| DXF ist falsch skaliert | Einheiten im DXF-Header prüfen. Nur bei einheitenlosen Dateien gilt „mm pro Einheit“; Faktor vor dem erneuten Import setzen. |
+| SVG steht vertikal anders als im Editor | SVG-Y wird beim Import gespiegelt, damit Maschinen-Y nach oben zeigt. Die Datei wird danach mit ihrer unteren linken Ecke positioniert. |
+| Bauteil liegt außerhalb des Schneidraums | Auch projizierte Achspositionen, Abbrand und Ein-/Ausfahrt müssen hineinpassen. Bei schrägem Draht können die Achsen weiter außen liegen als die Bauteilprofile. Positionen und Abstände der Profilebenen prüfen. |
+| Abbrand lässt die Kontur kollabieren | Eingetragenen Radius prüfen: Er ist die halbe Schnittbreite. Zu kleine Innenkonturen oder Engstellen können nach der Korrektur verschwinden. Profil ändern oder einen realistisch gemessenen kleineren Radius verwenden. |
+| Zwischenquerschnitt kollabiert oder überschneidet sich | Korrespondierende Startpunkte, Endpunkte und Laufrichtungen beider Profile prüfen. Unterschiedliche Ausgangspunkte können einen verdrehten Drahtweg erzeugen. |
+| Export bleibt deaktiviert | Nach Import/Einstellungsänderung neu berechnen. Für Export zusätzlich S-Maximum und passendes Steuerungsprofil eintragen/bestätigen. Ein Fehler verwirft den vorherigen Export. |
+| Innenkontur wird abgewiesen | Ein-/Ausfahrt aktivieren und alle Zugangspunkte eintragen. Draht einfädeln oder Zugangsschlitz vorsehen; automatische Zugangsplanung gibt es nicht. |
+| Fehlendes Modul ezdxf, shapely oder svgelements | Abhängigkeiten mit `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` aktualisieren. |
+| ezdxf meldet fehlendes Cache-Verzeichnis | Der optionale Schriftcache kann in eingeschränkten Umgebungen nicht geschrieben werden. Für die hier unterstützten Geometrien wird kein Schriftcache benötigt; Text wird nicht importiert. |
+| Optionaler Browsertest startet nicht | Microsoft Edge muss am im Testskript angegebenen Standardpfad installiert sein. Bei Browser-/GPU-Sandboxfehlern die manuelle Funktionsprüfung aus INSTALLATION.md verwenden. |
 
 ## Ein Problem nachvollziehbar festhalten
 

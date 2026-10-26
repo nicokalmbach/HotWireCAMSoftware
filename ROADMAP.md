@@ -24,8 +24,27 @@ der zugehörige Meilenstein ist aber erst teilweise umgesetzt.
   Kommunikation steht bisher bei `0.7.0`; die für frühere Achsenfunktionen nötige
   Schnittstelle muss vorher geklärt werden.
 - Anforderungen und Prüfkriterien für den ersten Achsen-Meilenstein festhalten.
-- Einen unabhängig von der Maschinensteuerung prüfbaren Profilimport vorbereiten.
-  Dessen Zuordnung zu einer Zielversion ist noch offen.
+- G-Code-Dialekt, F-Vorschubinterpretation und M3/S/M5-Zuordnung zum Stromregler
+  bestätigen; Maschinenmaße und Material-Abbrand praktisch ermitteln.
+
+## Umgesetzte CAM-Funktionen (unveröffentlicht)
+
+Die bisherige Zielversionstabelle beschreibt Hardware-Meilensteine. Unabhängig
+davon sind folgende lokale CAM-Funktionen implementiert, noch ohne neue Zielversion:
+
+- Zwei SVG-/DXF-Profile, Einheitenumrechnung und Auswahl einzelner Konturen.
+- Skalierung, Positionierung und nutzerdefinierter Schneidraum mit Profilebenen.
+- Start/Ende als Weganteile, Laufrichtung und gemeinsame Liniensequenzen mit Ecken.
+- Nennprogramm vor Abbrandkorrektur; Außen-/Innenoffsets und offene Links-/Rechtswege.
+- Innenkonturen mit gerader Ein-/Ausfahrt und benutzerdefiniertem Zugangspunkt.
+- Raum-/Achsprojektionsprüfung, Kollapsprüfung und 21 Zwischenquerschnitte.
+- Statisches Drahtmodell, Schrittregler und geometrische Bewegungswiedergabe.
+- Generischer XYUV-G-Code-Download und Prozentleistung mit konfigurierbarem S-Maximum.
+- Automatisierte Import-, Planungs-, API-Tests und optionaler Edge-Browsertest.
+
+Weiter offen: automatische Lochzuordnung und Auftragsverkettung, automatische
+Zugangsplanung, vollständiger Schneidbarkeitsnachweis, Thermik und Drahtdurchhang.
+Die Software kommuniziert weiterhin nicht mit einer Maschine.
 
 ## Begleitende Dokumentation
 

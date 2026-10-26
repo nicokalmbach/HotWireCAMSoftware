@@ -12,6 +12,29 @@
     font-family: "Segoe UI", sans-serif;
 }
 
+label { display: flex; flex-direction: column; gap: 7px; margin: 12px 0; color: var(--muted); font-size: 12px; }
+input, select { width: 100%; min-width: 0; padding: 9px; border: 1px solid #405460; border-radius: 6px; background: #101923; color: var(--text); font: inherit; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+input:disabled { opacity: .4; }
+input[type=checkbox] { width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--teal); }
+.check { flex-direction: row; align-items: center; line-height: 1.6; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 0 15px; }
+fieldset { margin: 24px 0; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; }
+legend { color: var(--accent); font-size: 13px; padding: 0 8px; }
+.helper, .import-info, #warnings { color: var(--muted); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.file-field { padding: 12px; border: 1px dashed #405460; border-radius: 8px; }
+#status { padding: 16px; border-left: 3px solid var(--accent); background: var(--surface); line-height: 1.6; }
+#preview { display: block; width: 100%; height: auto; background: #101923; border: 1px solid var(--border); border-radius: 8px; }
+.preview-toolbar, .preview-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+.preview-controls { padding: 16px 0; }
+.preview-controls input { flex: 1; width: auto; }
+.preview-controls output { font-size: 12px; color: var(--muted); }
+#code { max-height: 340px; overflow: auto; padding: 16px; background: #101923; font-size: 12px; }
+details { margin-top: 18px; }
+summary { cursor: pointer; color: var(--muted); }
+.button { cursor: pointer; padding: 9px 15px; }
+#gcode { margin-top: 18px; }
+
 * {
     box-sizing: border-box;
 }

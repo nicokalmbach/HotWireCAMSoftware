@@ -29,6 +29,7 @@ instance/
 *.iml
 
 # Temporary files and editor backups
+.tmp/
 *.tmp
 *.temp
 *.swp
