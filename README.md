@@ -26,10 +26,11 @@ Eine Maschinenanbindung und thermische Simulation sind nicht implementiert. Masc
 
 Die aktuelle Versionsnummer steht zentral in `version.py` (`__version__`).
 Die Website zeigt sie automatisch in der Fußzeile an. Bei einem Versionswechsel
-wird nur dieser Wert geändert; anschließend die Anwendung neu starten.
+diesen Wert sowie Changelog, [timeline.md](timeline.md) und betroffene Anleitungen
+aktualisieren; anschließend die Anwendung neu starten.
 
-Die Startversion ist `0.1.0`; die CAM-Erweiterungen stehen unter „Unveröffentlicht“
-im Changelog. Die Achsensteuerung für den ersten Hardware-Meilenstein steht noch aus.
+Die aktuelle Version ist `0.1.1`, die ursprüngliche Startversion war `0.1.0`.
+Die Achsensteuerung für den ersten Hardware-Meilenstein steht noch aus.
 
 Die geplanten Meilensteine und ihr Status stehen in der [Roadmap](ROADMAP.md).
 
@@ -43,6 +44,8 @@ Installation oder Architektur werden im selben Arbeitsschritt dokumentiert.
 | [CHANGELOG.md](CHANGELOG.md) | Änderungen und Versionshistorie |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Aufbau, Datenfluss und technische Entscheidungen |
 | [INSTALLATION.md](INSTALLATION.md) | Einrichtung, Start und Funktionsprüfung |
+| [INSTALLATION_DEBIAN.md](INSTALLATION_DEBIAN.md) | Debian-13-LXC-Installation für Linux-Anfänger |
+| [timeline.md](timeline.md) | Durchgeführte Änderungen je Version |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Häufige Probleme und Lösungen |
 | [ROADMAP.md](ROADMAP.md) | Geplante Meilensteine und offene Abstimmungen |
 
@@ -64,13 +67,29 @@ py -m venv .venv
 
 Die virtuelle Umgebung enthält die für dieses Projekt installierten Python-Pakete. Sie liegt im ignorierten Ordner `.venv` und wird nicht in Git eingecheckt.
 
+## Installation auf Debian 13 LXC
+
+Der interaktive [Installer](scripts/install-debian.sh) lädt das Repository direkt
+von GitHub und schlägt `wyro`, `/opt/hotwirecam` und Port `5001` vor. Gunicorn läuft
+als eigener Benutzer unter systemd und startet mit dem Container. Die Website ist
+standardmäßig im lokalen Netzwerk erreichbar. Kopierbare Befehle und alle Schritte
+stehen in [INSTALLATION_DEBIAN.md](INSTALLATION_DEBIAN.md).
+
+Die Installer-Dateien müssen zuvor auf GitHub bereitgestellt sein. Eine vollständige
+LXC-Installation wurde hier noch nicht durchgeführt. Ein Update-Script ist geplant;
+der Erstinstaller überschreibt keine bestehende Installation.
+
 ## Anwendung starten
+
+Unter Windows `start.cmd` doppelklicken. Der Starter lädt die aktuellen lokalen
+Projektdateien und öffnet die Website auf Port 5001 im Standardbrowser. Das
+Terminal geöffnet lassen; mit `Strg+C` beenden. Alternativ in PowerShell:
 
 ```powershell
 .\.venv\Scripts\python.exe app.py
 ```
 
-Öffne anschließend [http://127.0.0.1:5000](http://127.0.0.1:5000) im Browser. Zum Beenden drückst du im Terminal `Strg+C`.
+Öffne anschließend [http://127.0.0.1:5001](http://127.0.0.1:5001) im Browser. Zum Beenden drückst du im Terminal `Strg+C`.
 
 Wenn PowerShell das Aktivieren der Umgebung erlaubt, kannst du alternativ erst `.\.venv\Scripts\Activate.ps1` ausführen und danach `python app.py` starten.
 
@@ -83,6 +102,9 @@ Wenn PowerShell das Aktivieren der Umgebung erlaubt, kannst du alternativ erst `
 ├── cam.py                 # Geometrie, Synchronisation und G-Code
 ├── version.py             # Zentrale Versionsnummer
 ├── requirements.txt       # Python-Abhängigkeiten
+├── requirements-debian.txt # Zusätzlich Gunicorn für Linux
+├── scripts/               # Debian-Installer und systemd-Vorlage
+├── timeline.md            # Änderungen je Version
 ├── README.md              # Einstieg und Dokumentationsverzeichnis
 ├── CHANGELOG.md           # Änderungshistorie
 ├── ARCHITECTURE.md        # Technischer Aufbau

@@ -1,4 +1,39 @@
 "use strict";
+const navigation = [...document.querySelectorAll('.sidebar .nav-link')].map(link => ({
+    link, section: document.querySelector(link.getAttribute('href'))
+}));
+function activateSection(active) {
+    for (const {link, section} of navigation) {
+        const selected = section === active;
+        link.classList.toggle('active', selected);
+        if (selected) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+    }
+}
+function updateNavigation() {
+    let active = navigation[0].section;
+    for (const {section} of navigation) {
+        if (section.getBoundingClientRect().top <= 120) active = section;
+    }
+    // Auch der kurze Exportbereich muss am Seitenende aktiv werden können.
+    if (window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+        active = navigation.at(-1).section;
+    }
+    activateSection(active);
+}
+for (const {link, section} of navigation) {
+    link.addEventListener('click', () => activateSection(section));
+}
+window.addEventListener('scroll', updateNavigation, {passive: true});
+window.addEventListener('resize', updateNavigation);
+window.addEventListener('load', updateNavigation);
+window.addEventListener('hashchange', () => {
+    const target = navigation.find(({link}) => link.hash === window.location.hash);
+    if (target) activateSection(target.section);
+    else updateNavigation();
+});
+updateNavigation();
+
 const form = document.querySelector('#job-form');
 const statusText = document.querySelector('#status');
 const canvas = document.querySelector('#preview');

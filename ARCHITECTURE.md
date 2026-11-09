@@ -10,6 +10,10 @@ gehalten und für jede Berechnung erneut gesendet.
 
 | Bestandteil | Aufgabe |
 | --- | --- |
+| `start.cmd` | Windows-Starter: lokale Python-Umgebung, aktueller Projektordner und Browseröffnung |
+| `scripts/install-debian.sh` | Interaktive Erstinstallation aus GitHub auf Debian 13 mit eigenem Dienstbenutzer |
+| `scripts/hotwirecam.service.in` | Vorlage für Gunicorn und systemd im LXC-Container |
+| `requirements-debian.txt` | Linux-Betrieb: bestehende Anforderungen plus Gunicorn |
 | `app.py` | Flask-App: `GET /`, `POST /api/import`, `POST /api/plan`, Eingabefehler als JSON |
 | `profiles.py` | Vektorimport mit ezdxf/svgelements; Kurvenannäherung und Einheiten |
 | `cam.py` | Konturen, gemeinsame Liniensequenzen, Abbrand, Projektion, Raumprüfung, G-Code |
@@ -22,10 +26,51 @@ gehalten und für jede Berechnung erneut gesendet.
 
 ## Ablauf einer Anfrage
 
-1. Der Browser ruft `http://127.0.0.1:5000/` auf.
+Die Seitennavigation markiert den aktuellen Arbeitsbereich dynamisch in `cam.js`.
+Ankerklicks und Hashwechsel aktualisieren die Auswahl direkt; beim Scrollen und
+bei Größenänderungen folgt sie der Abschnittsposition im Browser. Am Seitenende
+wird auch der kurze Exportbereich aktiv. `aria-current="location"` kennzeichnet
+den aktiven Link zusätzlich für assistive Technologien.
+
+1. Der Browser ruft `http://127.0.0.1:5001/` auf.
 2. Die Route `index()` rendert `templates/index.html`.
 3. Der Context Processor `inject_version()` stellt `app_version` aus `version.py` bereit.
 4. Der Browser lädt das Stylesheet über die statische Flask-Route nach.
+
+## Betrieb im Debian-13-LXC-Container
+
+Der Installer läuft innerhalb des vorhandenen Containers als root. Er prüft Debian
+13, systemd, neue Zielpfade und Benutzer, fragt GitHub-Quelle/Branch oder Tag,
+Dienstbenutzer, Verzeichnis, Bind-Adresse und Port ab und zeigt die Auswahl vor
+der Installation. Standard: `wyro`, `/opt/hotwirecam`, `0.0.0.0:5001` und `main`.
+Er installiert Betriebssystempakete, klont das öffentliche HTTPS-Repository als
+Dienstbenutzer, erstellt eine eigene Python-Umgebung und installiert
+`requirements-debian.txt`. Der App-Import und die vorhandenen Unit-Tests müssen
+vor der Dienstaktivierung erfolgreich sein.
+
+Die aus dem geklonten Repository geladene Dienstvorlage wird nach
+`/etc/systemd/system/hotwirecam.service` geschrieben. Gunicorn lädt `app:app`
+direkt; der lokale `__main__`-Starter mit Browseröffnung wird nicht ausgeführt.
+Zwei Worker mit je zwei Threads bedienen HTTP; das Zeitlimit beträgt 120 Sekunden.
+Diese Werte sind Betriebsvorschläge, keine gemessenen Leistungsgrenzen.
+Der Dienst läuft ohne Root-Rechte mit `NoNewPrivileges` und protokolliert in das
+systemd-Journal. Die Vorlage verlangt für die LXC-Kompatibilität keine zusätzlichen
+Mount-Namespaces. `/var/lib/hotwirecam` ist das Home-Verzeichnis des Dienstbenutzers.
+Nach Aktivierung prüft der Installer Dienststatus und HTTP-Erreichbarkeit lokal.
+Die Erreichbarkeit vom PC muss zusätzlich geprüft werden.
+
+`/etc/hotwirecam/install.conf` hält Repository, gewählten Ref, installierten Commit,
+Benutzer, Pfad und Netzwerkparameter für ein späteres Update-Script fest; sie
+steuert den Dienst nicht unmittelbar. Erstinstallation und späteres Update werden
+getrennt: Vorhandene Pfade, Benutzer oder Dienste führen zum Abbruch, es gibt keinen
+automatischen Rollback. Abgebrochene Installationen bleiben zur Diagnose erhalten.
+Das Update-Script ist noch nicht implementiert. Python-Abhängigkeiten sind über
+Versionsbereiche definiert, nicht vollständig durch eine Lockdatei festgeschrieben.
+
+Der Standardbetrieb ist HTTP im vertrauenswürdigen LAN. Anmeldung, TLS und
+öffentlicher Internetbetrieb sind nicht eingerichtet; Firewalls und LXC-Host
+werden nicht verändert. Die vollständige Installation auf Debian 13 LXC ist noch
+auf dem Zielsystem zu prüfen. Siehe [Installationsanleitung](INSTALLATION_DEBIAN.md).
 
 ## Import und Planungsdaten
 
@@ -112,7 +157,10 @@ asynchrone Antworten dürfen keine aktuellen Ergebnisse überschreiben.
 
 - Flask liefert das lokale Grundgerüst und die serverseitigen Templates.
 - Beim direkten Start mit `python app.py` bindet der Entwicklungsserver an
-  `127.0.0.1:5000`; der Debug-Modus ist ausgeschaltet.
+  `127.0.0.1:5001`; der Debug-Modus ist ausgeschaltet. Der lokale, mehrthreadige
+  Werkzeug-Server bindet den Port vor der optionalen Browseröffnung
+  (`--open-browser`). `start.cmd` verwendet diese Option. Port und Host sind
+  zentral in `app.py` festgelegt; bei belegtem Port wird der Start abgebrochen.
 - Die Versionsnummer wird zentral gepflegt, damit Anzeige und Quellcode zusammenpassen.
 - Maschinenmaße und Schnittparameter sind nutzerdefiniert. Demoangaben sind Beispiele.
 - Bibliotheksgrundlagen: [ezdxf Path](https://ezdxf.readthedocs.io/en/stable/path.html),

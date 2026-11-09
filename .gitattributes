@@ -1,0 +1,3 @@
+# Linux-Scripte muessen auch bei einem Windows-Checkout LF behalten.
+*.sh text eol=lf
+*.service.in text eol=lf

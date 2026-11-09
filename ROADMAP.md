@@ -1,12 +1,13 @@
 # Roadmap
 
 Die Versionsziele stammen aus der bisherigen Projektplanung. Sie sind geplante
-Meilensteine ohne festgelegte Termine. Die Anwendung trägt bereits Version `0.1.0`,
-der zugehörige Meilenstein ist aber erst teilweise umgesetzt.
+Meilensteine ohne festgelegte Termine. Die Anwendung trägt Version `0.1.1`,
+der ursprüngliche Hardware-Meilenstein 0.1.0 ist aber erst teilweise umgesetzt.
 
 | Zielversion | Schwerpunkt | Stand |
 | --- | --- | --- |
 | 0.1.0 | Projektstruktur und eine Achse | Grundgerüst vorhanden; Achsensteuerung offen |
+| 0.1.1 | CAM-Stand und Debian-LXC-Installation | CAM und Installer implementiert; vollständige LXC-Installation noch zu prüfen |
 | 0.2.0 | Referenzschalter | Geplant |
 | 0.3.0 | Referenzfahrt | Geplant |
 | 0.4.0 | Mehrere Achsen | Geplant |
@@ -27,10 +28,10 @@ der zugehörige Meilenstein ist aber erst teilweise umgesetzt.
 - G-Code-Dialekt, F-Vorschubinterpretation und M3/S/M5-Zuordnung zum Stromregler
   bestätigen; Maschinenmaße und Material-Abbrand praktisch ermitteln.
 
-## Umgesetzte CAM-Funktionen (unveröffentlicht)
+## Umgesetzte CAM-Funktionen (Stand 0.1.1)
 
 Die bisherige Zielversionstabelle beschreibt Hardware-Meilensteine. Unabhängig
-davon sind folgende lokale CAM-Funktionen implementiert, noch ohne neue Zielversion:
+davon sind folgende lokale CAM-Funktionen implementiert:
 
 - Zwei SVG-/DXF-Profile, Einheitenumrechnung und Auswahl einzelner Konturen.
 - Skalierung, Positionierung und nutzerdefinierter Schneidraum mit Profilebenen.
@@ -45,6 +46,16 @@ davon sind folgende lokale CAM-Funktionen implementiert, noch ohne neue Zielvers
 Weiter offen: automatische Lochzuordnung und Auftragsverkettung, automatische
 Zugangsplanung, vollständiger Schneidbarkeitsnachweis, Thermik und Drahtdurchhang.
 Die Software kommuniziert weiterhin nicht mit einer Maschine.
+
+## Linux-Betrieb und Updates
+
+- Implementiert: interaktiver GitHub-Erstinstaller für Debian 13 LXC, eigener
+  Benutzer, Python-Umgebung, Gunicorn/systemd und Anleitung für Linux-Anfänger.
+- Offen: vollständige Installation und LAN-Zugriff auf dem Debian-13-Zielcontainer
+  prüfen; Installer-Dateien auf GitHub bereitstellen.
+- Geplant: separates Update-Script mit Prüfung, Sicherung und Wiederherstellung.
+  Der Installer speichert dafür bereits Installationseinstellungen und Git-Commit.
+- Bei jeder neuen Version [timeline.md](timeline.md) und Changelog mitpflegen.
 
 ## Begleitende Dokumentation
 

@@ -1,0 +1,21 @@
+[Unit]
+Description=HotWireCAM Webanwendung
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@APP_USER@
+Group=@APP_USER@
+WorkingDirectory=@APP_DIR@
+Environment=HOME=/var/lib/hotwirecam
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=@APP_DIR@/.venv/bin/gunicorn --bind @BIND_HOST@:@PORT@ --workers 2 --threads 2 --timeout 120 --access-logfile - --error-logfile - app:app
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

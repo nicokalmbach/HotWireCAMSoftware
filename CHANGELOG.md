@@ -7,6 +7,38 @@ keinen Versionswechsel.
 
 ## Unveröffentlicht
 
+## 0.1.1
+
+Projektstand ohne Behauptung eines bereits veröffentlichten GitHub-Releases.
+
+### Debian-Installation und Versionierung
+
+- Debian-13-LXC-Erstinstaller mit übernehmbaren Standardwerten, eigenem Benutzer
+  `wyro`, GitHub-Download, Python-Umgebung und Gunicorn/systemd-Dienst ergänzt.
+- Installationsmetadaten und Git-Commit als Vorbereitung eines späteren
+  Update-Scripts gespeichert; bestehende Installationen werden nicht überschrieben.
+- Linux-Anfängeranleitung mit kopierbaren Befehlen, Betrieb und Fehlerdiagnose.
+- `timeline.md` mit Einträgen für 0.1.0 und 0.1.1 eingeführt; Versionsnummer und
+  betroffene Projektdokumentation auf 0.1.1 aktualisiert.
+- Linux-Scripte und Dienstvorlagen erhalten über `.gitattributes` LF-Zeilenenden.
+- Vollständige Installation in einem Debian-13-LXC-Container noch nicht geprüft.
+
+- Diagnose der Windows-Blockierung der Shapely-/GEOS-DLL in
+  `TROUBLESHOOTING.md` dokumentiert; Ursache des geänderten Zulassungsverhaltens
+  und Lösung sind noch offen.
+
+### Behoben
+
+- Die Seitennavigation hebt beim Anklicken und Scrollen den aktuellen Bereich
+  hervor; die Markierung bleibt nicht mehr dauerhaft beim Profilimport.
+
+### Lokaler Start
+
+- Einheitlicher Standardport 5001 für die aktuelle lokale Anwendung.
+- Windows-Starter `start.cmd` und `app.py --open-browser` öffnen nach
+  erfolgreicher Portbindung automatisch die passende Adresse im Browser.
+  Bei belegtem Port bricht der Start ab.
+
 ### Ergänzt
 
 - Zwei SVG-/DXF-Dateien mit Konturauswahl und Einheitenumrechnung importieren.
@@ -28,7 +60,7 @@ keinen Versionswechsel.
   Umgebungskonfigurationen und weitere Test-Caches ergänzt; `.env.example`,
   `.env.sample` und `.env.template` bleiben versionierbar.
 
-## Aktueller Grundstand: 0.1.0
+## Ursprünglicher Grundstand: 0.1.0
 
 Ein Veröffentlichungsdatum ist bisher nicht dokumentiert. Dieser Abschnitt beschreibt
 den vorhandenen Implementierungsstand.
