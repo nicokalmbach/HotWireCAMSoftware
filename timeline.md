@@ -7,6 +7,12 @@ Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt
 
 ## 0.1.1
 
+- Eckensynchronisierung korrigiert: korrespondierende Richtungswechsel werden
+  abschnittsweise gekoppelt und gemeinsam erreicht, auch auf der Abbrandbahn.
+  Unpassende Eckanzahlen werden abgewiesen; kollineare Zusatzpunkte ignoriert.
+  Regressionstests für unterschiedliche Seitenlängen, offene Konturen,
+  unpassende Eckfolgen und gemeinsame G-Code-Eckblöcke ergänzt.
+
 - Debian-13-LXC-Erstinstaller mit interaktiven Vorschlägen für GitHub-Repository,
   Branch/Tag, eigenen Benutzer (Standard `wyro`), Pfad, Bind-Adresse und Port.
 - Automatischer Download des Repositorys samt Dienstvorlage; Python-Umgebung,

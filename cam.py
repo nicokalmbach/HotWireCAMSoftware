@@ -39,21 +39,46 @@ def section(points, start, end, closed):
     return [point_at(line, d, closed) for d in distances]
 
 
+def corner_sections(points):
+    """An jedem Richtungswechsel trennen; kollineare Stützpunkte ignorieren."""
+    indices = [0]
+    for i in range(1, len(points)-1):
+        incoming = [points[i][k]-points[i-1][k] for k in (0, 1)]
+        outgoing = [points[i+1][k]-points[i][k] for k in (0, 1)]
+        product = math.hypot(*incoming)*math.hypot(*outgoing)
+        cross = incoming[0]*outgoing[1]-incoming[1]*outgoing[0]
+        dot = sum(x*y for x,y in zip(incoming, outgoing))
+        if product == 0:
+            continue
+        if abs(cross) > product*1e-10 or dot <= 0:
+            indices.append(i)
+    indices.append(len(points)-1)
+    return [points[start:end+1] for start,end in zip(indices, indices[1:])]
+
+
 def synchronize(a, b, count):
-    """Gemeinsame Weganteile einschließlich aller Ecken beider Profile."""
+    """Eckpaare in Laufrichtung koppeln und nur abschnittsweise interpolieren."""
     lines = [LineString(a), LineString(b)]
     if min(line.length for line in lines) < 1e-6:
         raise CamError('Kontur ist zu kurz.')
-    fractions = {i/count for i in range(count+1)}
-    for pts, line in zip((a, b), lines):
-        total = 0.
-        for p, q in zip(pts, pts[1:]):
-            total += math.dist(p, q)
-            fractions.add(round(min(1., total/line.length), 12))
-    fractions = sorted(fractions)
-    if len(fractions) > 6000:
-        raise CamError('Zu viele Liniensegmente; Profile bitte vereinfachen.')
-    return [[point_at(line, f*line.length, False) for f in fractions] for line in lines]
+    parts = [corner_sections(points) for points in (a, b)]
+    if len(parts[0]) != len(parts[1]):
+        raise CamError('Eckzuordnung nicht eindeutig: Beide Konturen benötigen gleich viele '
+                       'Richtungswechsel im Schnittverlauf. Start/Ende, Laufrichtung und '
+                       'Profilunterteilung prüfen; auch Kurvenstützpunkte zählen als Richtungswechsel.')
+    result = [[list(a[0])], [list(b[0])]]
+    for pair in zip(*parts):
+        section_lines = [LineString(points) for points in pair]
+        # Die längere relative Teilstrecke bestimmt die gewünschte Auflösung.
+        steps = max(1, math.ceil(count*max(line.length/whole.length
+                                         for line,whole in zip(section_lines, lines))))
+        if len(result[0])+steps > 6000:
+            raise CamError('Zu viele Liniensegmente; Profile bitte vereinfachen.')
+        for output, points, line in zip(result, pair, section_lines):
+            output.extend(point_at(line, i*line.length/steps, False) for i in range(1, steps))
+            # Eckkoordinaten exakt übernehmen, ohne Bogenlängenrundung.
+            output.append(list(points[-1]))
+    return result
 
 
 def prepared(data, name):

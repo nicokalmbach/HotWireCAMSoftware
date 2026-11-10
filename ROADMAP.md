@@ -35,7 +35,8 @@ davon sind folgende lokale CAM-Funktionen implementiert:
 
 - Zwei SVG-/DXF-Profile, Einheitenumrechnung und Auswahl einzelner Konturen.
 - Skalierung, Positionierung und nutzerdefinierter Schneidraum mit Profilebenen.
-- Start/Ende als Weganteile, Laufrichtung und gemeinsame Liniensequenzen mit Ecken.
+- Start/Ende als Weganteile, Laufrichtung und abschnittsweise Synchronisierung
+  korrespondierender Ecken; unpassende Eckanzahlen werden abgewiesen.
 - Nennprogramm vor Abbrandkorrektur; Außen-/Innenoffsets und offene Links-/Rechtswege.
 - Innenkonturen mit gerader Ein-/Ausfahrt und benutzerdefiniertem Zugangspunkt.
 - Raum-/Achsprojektionsprüfung, Kollapsprüfung und 21 Zwischenquerschnitte.
@@ -45,6 +46,9 @@ davon sind folgende lokale CAM-Funktionen implementiert:
 
 Weiter offen: automatische Lochzuordnung und Auftragsverkettung, automatische
 Zugangsplanung, vollständiger Schneidbarkeitsnachweis, Thermik und Drahtdurchhang.
+Eine explizite Zuordnung von Formmerkmalen bei unterschiedlich unterteilten Kurven
+oder abweichenden Eckanzahlen ist ebenfalls offen; derzeit zählen alle
+nichtkollinearen Kurvenstützpunkte als Ecken.
 Die Software kommuniziert weiterhin nicht mit einer Maschine.
 
 ## Linux-Betrieb und Updates

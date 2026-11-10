@@ -7,6 +7,15 @@ keinen Versionswechsel.
 
 ## Unveröffentlicht
 
+- Eckpaare beider Profile werden in Laufrichtung im selben XYUV-Block erreicht;
+  Interpolation erfolgt abschnittsweise statt über die gesamte Konturlänge.
+  Dies gilt für Nennbahn, Abbrandbahn und die geometrischen Prüfungen.
+- Unterschiedliche Anzahlen von Richtungswechseln werden mit Hinweis auf
+  Start/Ende, Richtung und Unterteilung abgewiesen; Kurvenstützpunkte zählen mit,
+  kollineare Zusatzpunkte nicht. Regressionstests für Eckpaare und Export ergänzt.
+- Lokaler Gesamttest weiterhin beim Shapely-Import durch die Windows-
+  Anwendungssteuerungsrichtlinie blockiert.
+
 ## 0.1.1
 
 Projektstand ohne Behauptung eines bereits veröffentlichten GitHub-Releases.

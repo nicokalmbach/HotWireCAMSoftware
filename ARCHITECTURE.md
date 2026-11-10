@@ -104,17 +104,26 @@ Punkte in den Profilebenen `sections`, Start/Ende, Raummaße, Hinweise und optio
 1. Gesamte Datei an ihrer unteren linken Ecke normalisieren, skalieren und im Raum
    positionieren. Eine ausgewählte Kontur je Datei verwenden. Geschlossene Konturen
    gegen den Uhrzeigersinn orientieren; danach optionale Umkehr und Start-/Endanteile.
-2. Konturen auf gemeinsame relative Bogenlängen aufteilen. Gleichmäßige Stützstellen
-   werden um die Weganteile aller Ecken beider Profile ergänzt. So bleiben Ecken
-   erhalten und beide Seiten besitzen gleich viele G1-Abschnitte. Maximal 5999
-   gemeinsame Segmente; bei Überschreitung Geometrie vereinfachen.
+2. Konturen an Richtungswechseln aufteilen und die Ecken ab dem gewählten Start
+   in Laufrichtung paarweise zuordnen. Zusätzliche kollineare Punkte zählen nicht
+   als Ecken (relative Kreuzprodukt-Toleranz 1e-10); Kurvenstützpunkte zählen mit.
+   Bei unterschiedlicher Anzahl der Teilabschnitte wird die Planung abgewiesen.
+   Nur innerhalb jedes Eckpaars proportional zur jeweiligen Abschnittslänge
+   interpolieren: Beide Profile erreichen die nächste Ecke im selben G1-Block.
+   Die längere relative Teilstrecke bestimmt die Unterteilung aus der gewünschten
+   Mindestanzahl. Eckkoordinaten werden exakt übernommen. Maximal 5999 gemeinsame
+   Segmente; bei Überschreitung Geometrie vereinfachen. Diese konservative Zuordnung
+   setzt korrespondierende Start-/Endpunkte, Laufrichtungen und Profilunterteilungen
+   voraus; eine semantische Erkennung von Formmerkmalen ist nicht implementiert.
 3. Zuerst das vollständige **Nennprogramm als strukturierte Bewegungsblöcke** auf der
    Kontur einschließlich gerader Ein-/Ausfahrt erzeugen. Danach Abbrand anwenden:
    Shapely-Polygonbuffer außen positiv/innen negativ, offene Linien mit offset_curve.
    Ecken verwenden Mitre-Verbindungen mit dem Bibliothekslimit. Leere/zerfallene
    Offsets und stark entfernte innere Details werden abgewiesen. Den ursprünglichen
    Anfang auf die korrigierte Kontur projizieren, Start/Endanteile dort anwenden und
-   erneut gemeinsam unterteilen. Erst zum Schluss werden die G-Code-Textzeilen geschrieben.
+   erneut über Eckpaare unterteilen. Auch durch Offsets veränderte Eckanzahlen
+   müssen zusammenpassen; andernfalls wird abgebrochen. Erst zum Schluss werden
+   die G-Code-Textzeilen geschrieben.
 4. Bauteilprofile liegen bei `z_xy` und `z_uv` innerhalb des Achsabstands `span`.
    Der gerade Draht wird linear auf die Achsebenen bei z=0 und z=span extrapoliert.
    Auch dort müssen nominelle und korrigierte Wege inklusive Ein-/Ausfahrt im Raum

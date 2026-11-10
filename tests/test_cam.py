@@ -104,6 +104,35 @@ class PlanTests(unittest.TestCase):
             self.assertTrue(any(math.dist(original,p)<1e-8 for p in a))
         for original in rectangle(11,23):
             self.assertTrue(any(math.dist(original,p)<1e-8 for p in b))
+        for corner_a,corner_b in zip(rectangle(19,7), rectangle(11,23)):
+            self.assertIn((corner_a,corner_b), list(zip(a,b)))
+
+    def test_open_corners_with_different_lengths_and_collinear_points(self):
+        a = [[0,0],[10,0],[90,0],[90,10]]
+        b = [[0,0],[5,0],[5,80]]
+        left,right = synchronize(a,b,40)
+        index = left.index([90,0])
+        self.assertEqual(right[index], [5,0])
+        self.assertTrue(all(p[1] == q[1] == 0 for p,q in zip(left[:index],right[:index])))
+        self.assertTrue(all(p[0] == 90 and q[0] == 5
+                            for p,q in zip(left[index:],right[index:])))
+
+    def test_different_corner_counts_rejected(self):
+        with self.assertRaisesRegex(CamError, 'Eckzuordnung'):
+            synchronize(rectangle(), [[0,0],[40,0],[20,30],[0,0]], 40)
+
+    def test_compensated_corners_reached_in_same_gcode_block(self):
+        result = plan(job(controller_confirmed=True,s_max=2000,segments=4))
+        moves = [line for line in result['gcode'].splitlines() if line.startswith('G1 ')]
+        # Beide Rechtecke beginnen nach dem Offset auf der unteren Kante.
+        # Jede folgende Ecke muss auf beiden Seiten im selben Satz liegen.
+        for corner in ([160.5,59.5,130.5,59.5], [160.5,130.5,130.5,130.5],
+                       [59.5,130.5,69.5,130.5], [59.5,59.5,69.5,59.5]):
+            index = next(i for i,p in enumerate(result['sections'])
+                         if math.dist(p,corner) < 1e-8)
+            axis_point = result['path'][index]
+            self.assertTrue(all(f'{axis}{v:.5f}' in moves[index-1]
+                                for axis,v in zip('XYUV',axis_point)))
 
     def test_postprocessing_changes_path_not_nominal(self):
         uncompensated = plan(job(burn_radius=0))
