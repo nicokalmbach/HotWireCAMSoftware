@@ -7,6 +7,13 @@ Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt
 
 ## 0.1.1
 
+- Option „Dieses Profil für beide Seiten verwenden“ bei der XY-Eingabe ergänzt.
+  Datei und Kontur werden für UV übernommen, weitere Einstellungen bleiben
+  getrennt; ein vorheriges UV-Profil bleibt beim Abwählen verfügbar.
+  Edge-Browsertest um Übernahme, Konturwechsel und Wiederherstellung erweitert
+  und erfolgreich außerhalb der Sandbox ausgeführt.
+- Bestätigungstext zum Steuerungsprofil präzisiert: XYUV und G21/G90/G94
+  betreffen die Bewegung; M3/S und M5 steuern die Heizleistung.
 - Eckensynchronisierung korrigiert: korrespondierende Richtungswechsel werden
   abschnittsweise gekoppelt und gemeinsam erreicht, auch auf der Abbrandbahn.
   Unpassende Eckanzahlen werden abgewiesen; kollineare Zusatzpunkte ignoriert.

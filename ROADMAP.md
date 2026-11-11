@@ -34,6 +34,8 @@ Die bisherige Zielversionstabelle beschreibt Hardware-Meilensteine. Unabhängig
 davon sind folgende lokale CAM-Funktionen implementiert:
 
 - Zwei SVG-/DXF-Profile, Einheitenumrechnung und Auswahl einzelner Konturen.
+- Wahlweise XY-Datei und Kontur für beide Seiten verwenden; weitere
+  Profileinstellungen bleiben je Seite einstellbar.
 - Skalierung, Positionierung und nutzerdefinierter Schneidraum mit Profilebenen.
 - Start/Ende als Weganteile, Laufrichtung und abschnittsweise Synchronisierung
   korrespondierender Ecken; unpassende Eckanzahlen werden abgewiesen.

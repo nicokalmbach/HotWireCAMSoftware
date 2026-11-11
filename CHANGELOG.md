@@ -7,6 +7,12 @@ keinen Versionswechsel.
 
 ## Unveröffentlicht
 
+- Checkbox bei der ersten Profileingabe ergänzt: XY-Datei und Konturauswahl
+  auch für UV verwenden; übrige Profileinstellungen bleiben getrennt.
+  Beim Abwählen wird ein zuvor geladenes UV-Profil wieder angezeigt.
+  Übernahme, Konturwechsel und Wiederherstellung im Edge-Browsertest geprüft.
+- Bestätigung des Steuerungsprofils verständlicher formuliert: unterstützte
+  Achsen und G-Code-Modi von der Ansteuerung der Heizleistung unterschieden.
 - Eckpaare beider Profile werden in Laufrichtung im selben XYUV-Block erreicht;
   Interpolation erfolgt abschnittsweise statt über die gesamte Konturlänge.
   Dies gilt für Nennbahn, Abbrandbahn und die geometrischen Prüfungen.

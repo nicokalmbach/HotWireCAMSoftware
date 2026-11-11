@@ -33,6 +33,10 @@
             {% for name, title in [('xy', 'XY · linkes Profil'), ('uv', 'UV · rechtes Profil')] %}
                 <article class="panel import-panel">
                     <div class="panel-heading"><div class="step-number">{{ loop.index }}</div><h2>{{ title }}</h2></div>
+                    {% if name == 'xy' %}
+                    <label class="check"><input type="checkbox" id="same-profile" aria-describedby="same-profile-help"> Dieses Profil für beide Seiten verwenden</label>
+                    <p class="helper" id="same-profile-help">Datei und Konturauswahl für UV übernehmen. Position, Skalierung, Start/Ende und Laufrichtung bleiben je Seite einstellbar.</p>
+                    {% endif %}
                     <label class="file-field">Eigene SVG- oder DXF-Datei<input type="file" id="file-{{ name }}" accept=".svg,.dxf"></label>
                     <label>Einheitenlose DXF: mm pro Einheit<input id="unit-{{ name }}" type="number" value="1" min="0.0001" max="10000" step="any"></label>
                     <p class="panel-footnote">Der Faktor gilt beim nächsten Import ohne DXF-Einheitenangabe. Dateipfade werden nicht geprüft oder gespeichert.</p>
@@ -79,7 +83,7 @@
                 </fieldset>
                 <fieldset><legend>G-Code und Stromregler</legend><div class="fields">
                     <label>S-Wert bei 100 % Leistung<input name="s_max" id="s-max" type="number" min="0.001" max="1000000000" step="any"></label>
-                </div><label class="check"><input type="checkbox" name="controller_confirmed" id="controller-confirmed"> Steuerungsprofil geprüft: XYUV, G21/G90/G94 sowie M3/S steuern den Stromregler, M5 schaltet ihn aus.</label>
+                </div><label class="check"><input type="checkbox" name="controller_confirmed" id="controller-confirmed"> Ich habe geprüft, dass meine Steuerung XYUV sowie G21/G90/G94 unterstützt und dass M3/S die Heizleistung vorgibt und M5 die Heizung ausschaltet.</label>
                 <p class="helper">Ohne diese Angaben ist die Vorschau verfügbar. Der Export setzt voraus, dass die Startposition bei ausgeschaltetem Draht manuell angefahren wird. Er enthält keine Referenzfahrt und keine automatische Anfahrt.</p></fieldset>
                 <button class="button button-primary" id="calculate" type="submit">Schneidweg berechnen</button>
             </section>

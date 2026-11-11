@@ -11,7 +11,7 @@ Eine Maschinenanbindung und thermische Simulation sind nicht implementiert. Masc
 
 ## Schnittdaten vorbereiten
 
-1. Für XY und UV jeweils eine SVG- oder DXF-Datei laden. Der Inhalt wird im Speicher verarbeitet; Dateipfade werden weder kontrolliert noch gespeichert. Jede Datei darf mehrere Konturen enthalten.
+1. Für XY und UV jeweils eine SVG- oder DXF-Datei laden. Alternativ bei der ersten Profileingabe „Dieses Profil für beide Seiten verwenden“ aktivieren: Datei und Konturauswahl von XY gelten dann auch für UV. Position, Skalierung, Start/Ende und Laufrichtung bleiben je Seite einstellbar. Nach dem Abwählen steht ein zuvor geladenes UV-Profil wieder zur Verfügung. Der Inhalt wird im Speicher verarbeitet; Dateipfade werden weder kontrolliert noch gespeichert. Jede Datei darf mehrere Konturen enthalten.
 2. Je eine Kontur auswählen. Ein Auftrag bearbeitet ein Konturpaar; Löcher separat vor der Außenkontur planen. SVG-Maße/viewBox werden mit 96 dpi in mm umgerechnet und Y nach oben gespiegelt. DXF-Einheiten stammen aus dem Header; für einheitenlose DXF ist der Faktor einzugeben.
 3. Schneidraum, Abstand der Achsebenen und Lage der beiden Profilebenen eintragen. Profilpositionen beziehen sich auf die untere linke Ecke der gesamten jeweiligen Datei; die Lage ihrer Innenkonturen bleibt erhalten.
 4. Start/Ende in Prozent der Konturlänge und gegebenenfalls Laufrichtung einstellen. Geschlossene Profile werden zunächst gegen den Uhrzeigersinn orientiert. Gleiche Start-/Endwerte ergeben eine volle Runde; offene Profile benötigen Ende > Start nach Richtungswahl.

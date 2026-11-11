@@ -100,7 +100,8 @@ WebDriver erforderlich):
 
 Die Browserprüfung startet einen eigenen lokalen Testserver auf einem freien Port
 und Edge ohne sichtbares Fenster mit temporärem Profil unter `.tmp/`. Sie prüft
-Demoauftrag, SVG-Uploads, Lochwerkzeug, Planung, Vorschau, Ansichten,
+Demoauftrag, SVG-Uploads, beidseitige Profilübernahme samt Konturwechsel und
+Wiederherstellung des separaten UV-Profils, Lochwerkzeug, Planung, Vorschau, Ansichten,
 Leistung/Export und das Verwerfen veralteter Ergebnisse. Browser-Sandboxrestriktionen können ihren Start verhindern.
 Dann die oben beschriebenen Schritte manuell im Browser prüfen.
 

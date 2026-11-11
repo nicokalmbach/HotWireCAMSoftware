@@ -74,6 +74,16 @@ auf dem Zielsystem zu prüfen. Siehe [Installationsanleitung](INSTALLATION_DEBIA
 
 ## Import und Planungsdaten
 
+Die Checkbox bei der XY-Eingabe verwendet im Browser dieselben importierten Daten
+und dieselbe Konturauswahl für beide Seiten. UV-Import, Einheitenfaktor und
+Konturauswahl sind währenddessen gesperrt; die übrigen UV-Felder bleiben unabhängig.
+Ein separates UV-Profil samt Konturauswahl bleibt zum Wiederherstellen erhalten.
+XY-Neuimporte und Konturwechsel aktualisieren die Übernahme; ein ungültiger oder
+laufender XY-Import verhindert die Planung auch für UV. Die Planungsanfrage enthält
+weiterhin beide Profile und übernimmt explizit `uv_contour` aus `xy_contour`.
+Umschalten verwirft vorhandene Vorschau und Export. Das Demobeispiel setzt die
+Option zurück und lädt wieder zwei getrennte Profile.
+
 `POST /api/import` erhält ein Multipart-Feld `file` und optional `unit_scale`
 (mm pro Einheit für einheitenlose DXF). Die Antwort enthält `contours` als Listen
 von `[x,y]`-Punkten in mm und `notes`. Es wird kein Serverpfad geöffnet oder gespeichert.

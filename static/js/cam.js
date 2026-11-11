@@ -42,6 +42,9 @@ const progress = document.querySelector('#progress');
 const download = document.querySelector('#download');
 const play = document.querySelector('#play');
 const profiles = {xy: null, uv: null};
+const filenames = {xy: '', uv: ''};
+const sameProfile = document.querySelector('#same-profile');
+let separateUVContour = '0';
 const generations = {xy: 0, uv: 0};
 let result = null, revision = 0, playing = false, lastFrame = 0;
 
@@ -65,8 +68,16 @@ async function responseJSON(response) {
 }
 function setProfile(name, data, filename) {
     profiles[name] = data;
+    filenames[name] = filename;
+    renderProfile(name, data, filename);
+    if (name === 'xy' && sameProfile.checked) updateSharedProfile();
+}
+function renderProfile(name, data, filename) {
     const select = document.querySelector(`#contour-${name}`);
     select.replaceChildren();
+    select.disabled = !data;
+    document.querySelector(`#info-${name}`).textContent = filename;
+    if (!data) return;
     data.contours.forEach((points, i) => {
         const first = points[0], last = points.at(-1);
         const closed = first[0] === last[0] && first[1] === last[1];
@@ -79,9 +90,33 @@ function setProfile(name, data, filename) {
     select.disabled = false;
     document.querySelector(`#info-${name}`).textContent = `${filename} · ${data.contours.length} Kontur(en). ${data.notes.join(' ')}`;
 }
+function updateSharedProfile() {
+    const shared = sameProfile.checked;
+    document.querySelector('#file-uv').disabled = shared;
+    document.querySelector('#unit-uv').disabled = shared;
+    renderProfile('uv', shared ? profiles.xy : profiles.uv,
+        shared ? (profiles.xy ? `${filenames.xy} (von XY übernommen)` : 'Zuerst das XY-Profil laden.')
+            : (filenames.uv || 'Noch keine Datei geladen.'));
+    const select = document.querySelector('#contour-uv');
+    if (shared) {
+        select.value = document.querySelector('#contour-xy').value;
+        select.disabled = true;
+    } else if (profiles.uv) select.value = separateUVContour;
+}
+sameProfile.addEventListener('change', () => {
+    if (sameProfile.checked) separateUVContour = document.querySelector('#contour-uv').value || '0';
+    invalidate();
+    updateSharedProfile();
+});
+document.querySelector('#contour-xy').addEventListener('change', () => {
+    if (sameProfile.checked) updateSharedProfile();
+});
 for (const name of ['xy', 'uv']) {
     document.querySelector(`#file-${name}`).addEventListener('change', async event => {
+        if (name === 'uv' && sameProfile.checked) return;
         invalidate(); profiles[name] = null;
+        filenames[name] = '';
+        if (name === 'xy' && sameProfile.checked) updateSharedProfile();
         const generation = ++generations[name];
         const select = document.querySelector(`#contour-${name}`);
         select.disabled = true; select.replaceChildren();
@@ -95,6 +130,7 @@ for (const name of ['xy', 'uv']) {
             const data = await responseJSON(await fetch('/api/import', {method: 'POST', body: payload}));
             if (generation !== generations[name]) return;
             setProfile(name, data, file.name);
+            if (name === 'uv' && sameProfile.checked) updateSharedProfile();
             statusText.textContent = `${name.toUpperCase()}-Profil geladen. Eingaben prüfen und Schneidweg berechnen.`;
         } catch (error) {
             if (generation !== generations[name]) return;
@@ -114,13 +150,15 @@ function updateAccess() {
 form.addEventListener('change', updateAccess);
 form.addEventListener('submit', async event => {
     event.preventDefault(); invalidate();
-    if (!profiles.xy || !profiles.uv) {statusText.textContent = 'Bitte zwei gültige Profildateien laden.'; return;}
+    const uvProfile = sameProfile.checked ? profiles.xy : profiles.uv;
+    if (!profiles.xy || !uvProfile) {statusText.textContent = sameProfile.checked ? 'Bitte ein gültiges XY-Profil laden.' : 'Bitte zwei gültige Profildateien laden.'; return;}
     const current = revision;
-    const data = {xy: profiles.xy, uv: profiles.uv};
+    const data = {xy: profiles.xy, uv: uvProfile};
     for (const input of form.elements) {
         if (!input.name || input.disabled) continue;
         data[input.name] = input.type === 'checkbox' ? input.checked : input.type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value;
     }
+    if (sameProfile.checked) data.uv_contour = form.elements.xy_contour.value;
     const calculate = document.querySelector('#calculate');
     calculate.disabled = true;
     statusText.textContent = 'Konturen, Abbrand und Schneidraum werden geprüft …';
@@ -203,6 +241,7 @@ download.addEventListener('click', () => {
 });
 document.querySelector('#demo').addEventListener('click', () => {
     invalidate(); form.reset();
+    separateUVContour = '0';
     for(const name of ['xy','uv']) {
         generations[name]++; document.querySelector(`#file-${name}`).value='';
         const size = name==='xy' ? 100 : 60;
@@ -210,6 +249,7 @@ document.querySelector('#demo').addEventListener('click', () => {
     }
     const demo = {width:400,height:300,span:600,z_xy:100,z_uv:500,xy_x:60,xy_y:60,uv_x:70,uv_y:60,feed:100,power:30,burn_radius:.5};
     for(const [key,value] of Object.entries(demo)) form.elements[key].value=value;
+    updateSharedProfile();
     updateAccess();
     statusText.textContent='Demobeispiel geladen. Alle Maße und Schnittparameter sind ausschließlich Beispieldaten. Schneidweg berechnen, um die Vorschau zu öffnen.';
 });
