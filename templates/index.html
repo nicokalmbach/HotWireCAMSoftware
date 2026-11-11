@@ -31,10 +31,105 @@
         <form id="job-form">
             <section class="panel settings-panel" id="einstellungen">
                 <div class="panel-heading"><div class="step-number">01</div><h2>Maschinenparameter &amp; Schnittplanung</h2></div>
-                <fieldset><legend>Maschine und Bauteilposition</legend><div class="fields">
-                    <label>Raumbreite X/U<input name="width" type="number" min="0.01" max="1000000" step="any" required></label>
-                    <label>Raumhöhe Y/V<input name="height" type="number" min="0.01" max="1000000" step="any" required></label>
-                    <label>Abstand der Achsebenen<input name="span" type="number" min="0.01" max="1000000" step="any" required></label>
+                <fieldset><legend>Maschine und Bauteilposition</legend>
+                    <p class="helper" id="machine-dimensions-help">Maße direkt an den Maßlinien eintragen (mm). Links liegt die XY-Achsebene, rechts die UV-Achsebene. Gelb markiert den Arbeitsraum, Orange den Schneiddraht. Das Maschinenmodell dient der Orientierung und ist nicht maßstabsgetreu.</p>
+                    <div class="machine-diagram-scroll" tabindex="0" role="region" aria-label="Schneidraum mit Maßeingabe, auf kleinen Bildschirmen horizontal scrollbar">
+                        <div class="machine-diagram">
+                            <svg viewBox="0 0 900 580" role="img" aria-labelledby="machine-title machine-description">
+                                <title id="machine-title">Heißdrahtmaschine mit hervorgehobenem Arbeitsraum</title>
+                                <desc id="machine-description">Zwei Führungssäulen mit Schlitten auf parallelen Grundschienen. Der orange Schneiddraht verbindet XY links mit UV rechts. Gelbe Flächen markieren den Arbeitsraum. Breite X/U verläuft entlang der Grundschienen, Höhe Y/V entlang der Säulen, der Achsebenenabstand zwischen den beiden Maschinenseiten.</desc>
+                                <defs>
+                                    <linearGradient id="scene-bg" x2="0" y2="1"><stop stop-color="#bfc5cd"/><stop offset="1" stop-color="#edf0f3"/></linearGradient>
+                                    <linearGradient id="aluminium"><stop stop-color="#6b747e"/><stop offset=".18" stop-color="#e4e8eb"/><stop offset=".4" stop-color="#a6afb8"/><stop offset=".57" stop-color="#f7f8f9"/><stop offset="1" stop-color="#7b8590"/></linearGradient>
+                                    <linearGradient id="rail-top" x2="0" y2="1"><stop stop-color="#d6dce1"/><stop offset="1" stop-color="#828d98"/></linearGradient>
+                                    <linearGradient id="room-fill" x2="0" y2="1"><stop stop-color="#ffda48" stop-opacity=".25"/><stop offset="1" stop-color="#ffda48" stop-opacity=".07"/></linearGradient>
+                                    <radialGradient id="floor-light"><stop stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+                                    <pattern id="floor-grid" width="45" height="45" patternUnits="userSpaceOnUse" patternTransform="matrix(1 -.078 .72 .5 0 0)"><path d="M45 0H0V45" fill="none" stroke="#fff" stroke-opacity=".36" stroke-width="1"/></pattern>
+                                    <filter id="machine-shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+                                    <filter id="wire-glow" x="-20%" y="-100%" width="140%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
+                                    <marker id="dimension-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M10 0 L0 5 L10 10" fill="none" stroke="context-stroke" stroke-width="1.5"/></marker>
+                                    <g id="guide-column">
+                                        <path d="M-24 6 L-8 -3 L25 0 L10 10 Z" fill="#e3e7eb"/>
+                                        <path d="M10 10 L25 0 V-264 L10 -254 Z" fill="#727d87"/>
+                                        <path d="M-24 6 H10 V-254 H-24 Z" fill="url(#aluminium)" stroke="#727b84"/>
+                                        <path d="M-17 0 V-248 M1 0 V-248" stroke="#454e57" stroke-width="4"/>
+                                        <path d="M-15 0 V-248 M3 0 V-248" stroke="#e9edf1" stroke-width="1.5"/>
+                                        <path d="M-5 -3 V-250" stroke="#343d45" stroke-width="4"/>
+                                        <path d="M-6 -8 V-244" stroke="#c5cdd3" stroke-width="1" stroke-dasharray="2 3"/>
+                                        <path d="M-29 -253 L-12 -263 L29 -260 L12 -250 Z" fill="#333c45"/>
+                                        <path d="M-29 -253 H12 V-247 H-29 Z" fill="#535f69"/>
+                                        <path d="M-30 8 H16 V-8 H-30 Z" fill="#47525c"/>
+                                        <g fill="#d9e0e6"><circle cx="-22" cy="0" r="2"/><circle cx="8" cy="0" r="2"/></g>
+                                        <g transform="translate(0,-116)">
+                                            <path d="M-31 -16 L-18 -24 L24 -21 L12 -13 Z" fill="#69747e"/>
+                                            <rect x="-31" y="-16" width="43" height="39" rx="3" fill="#303941" stroke="#1d252b"/>
+                                            <path d="M12 -13 L24 -21 V15 L12 23 Z" fill="#161e25"/>
+                                            <rect x="-29" y="-12" width="6" height="31" rx="1" fill="#efc629"/>
+                                            <g fill="#adb7c0"><circle cx="-16" cy="-8" r="2"/><circle cx="4" cy="-8" r="2"/><circle cx="-16" cy="15" r="2"/><circle cx="4" cy="15" r="2"/></g>
+                                            <circle cx="4" cy="3" r="6" fill="#111b22" stroke="#a1adb7"/><circle cx="4" cy="3" r="2" fill="#f7ca2e"/>
+                                        </g>
+                                    </g>
+                                </defs>
+                                <rect width="900" height="580" fill="url(#scene-bg)"/>
+                                <ellipse cx="490" cy="420" rx="470" ry="220" fill="url(#floor-light)"/>
+                                <path d="M0 300 H900 V580 H0 Z" fill="url(#floor-grid)"/>
+                                <g fill="#38434d" opacity=".24" filter="url(#machine-shadow)"><path d="M148 385 L330 513 L395 480 L235 367 Z"/><path d="M602 350 L784 478 L849 445 L689 332 Z"/></g>
+                                <g transform="translate(160,367)">
+                                    <path d="M-8 0 L38 -17 L211 103 L165 122 Z" fill="url(#rail-top)" stroke="#78838d"/>
+                                    <path d="M-8 0 L165 122 V143 L-8 21 Z" fill="#68737d" stroke="#535f69"/>
+                                    <path d="M165 122 L211 103 V124 L165 143 Z" fill="#414c56"/>
+                                    <path d="M2 4 L165 119 M12 0 L175 115 M25 -5 L188 110 M35 -9 L198 106" fill="none" stroke="#515c65" stroke-width="3"/>
+                                    <path d="M-4 14 L158 128" stroke="#bdc5cd" stroke-width="2"/>
+                                    <path d="M166 123 L202 109 V124 L166 138 Z" fill="#f5c928"/>
+                                    <circle cx="184" cy="123" r="4" fill="#65717c"/>
+                                    <path d="M-9 23 L7 34 L7 42 L-9 31 Z M152 141 L170 151 L183 146 V139 L169 142 L152 131 Z" fill="#28323b"/>
+                                </g>
+                                <g transform="translate(610,332)">
+                                    <path d="M-8 0 L38 -17 L211 103 L165 122 Z" fill="url(#rail-top)" stroke="#78838d"/>
+                                    <path d="M-8 0 L165 122 V143 L-8 21 Z" fill="#68737d" stroke="#535f69"/>
+                                    <path d="M165 122 L211 103 V124 L165 143 Z" fill="#414c56"/>
+                                    <path d="M2 4 L165 119 M12 0 L175 115 M25 -5 L188 110 M35 -9 L198 106" fill="none" stroke="#515c65" stroke-width="3"/>
+                                    <path d="M-4 14 L158 128" stroke="#bdc5cd" stroke-width="2"/>
+                                    <path d="M166 123 L202 109 V124 L166 138 Z" fill="#f5c928"/>
+                                    <circle cx="184" cy="123" r="4" fill="#65717c"/>
+                                    <path d="M-9 23 L7 34 L7 42 L-9 31 Z M152 141 L170 151 L183 146 V139 L169 142 L152 131 Z" fill="#28323b"/>
+                                </g>
+                                <use href="#guide-column" transform="translate(680 370)"/>
+                                <g class="machine-room">
+                                    <path d="M225 380 L345 465 L795 430 L675 345 Z" fill="#ffdc44" fill-opacity=".19"/>
+                                    <path d="M225 120 L675 85 L795 170 L345 205 Z" fill="#fff1a1" fill-opacity=".3"/>
+                                    <path d="M225 120 L675 85 V345 L225 380 Z" fill="url(#room-fill)"/>
+                                    <path d="M675 85 L795 170 V430 L675 345 Z" fill="#ffd52b" fill-opacity=".14"/>
+                                    <path d="M345 205 L795 170 V430 L345 465 Z" fill="url(#room-fill)"/>
+                                    <path class="room-hidden" d="M225 380 L675 345 V85 M675 345 L795 430"/>
+                                    <path class="room-outline" d="M225 380 V120 L675 85 L795 170 V430 L345 465 L225 380 M225 120 L345 205 L795 170 M345 205 V465"/>
+                                </g>
+                                <use href="#guide-column" transform="translate(230 405)"/>
+                                <path d="M234 292 L684 257" stroke="#ffad16" stroke-width="8" opacity=".7" filter="url(#wire-glow)"/>
+                                <path d="M234 292 L684 257" stroke="#fff1b1" stroke-width="2.5"/>
+                                <path d="M234 292 L684 257" stroke="#ec971b" stroke-width="1"/>
+                                <g class="machine-side-badge"><rect x="158" y="164" width="55" height="46" rx="5"/><text x="185" y="185">XY</text><text class="badge-subtitle" x="185" y="200">links</text><rect x="698" y="104" width="55" height="46" rx="5"/><text x="725" y="125">UV</text><text class="badge-subtitle" x="725" y="140">rechts</text></g>
+                                <g class="machine-measure measure-height">
+                                    <path class="dimension-extension" d="M215 120 H115 M215 380 H115"/>
+                                    <path class="dimension-line" d="M135 120 V380"/>
+                                </g>
+                                <g class="machine-measure measure-width">
+                                    <path class="dimension-extension" d="M217 390 L187 426 M337 475 L307 511"/>
+                                    <path class="dimension-line" d="M195 418 L315 503"/>
+                                </g>
+                                <g class="machine-measure measure-span">
+                                    <path class="dimension-extension" d="M345 475 V553 M795 440 V518"/>
+                                    <path class="dimension-line" d="M345 538 L795 503"/>
+                                </g>
+                                <g class="machine-orientation" transform="translate(65 509)"><circle r="3" fill="#54616d"/><path d="M0 0 V-32" stroke="#42956b"/><path d="M0 0 L27 18" stroke="#d06156"/><path d="M0 0 L36 -3" stroke="#547fc1"/><text x="-5" y="-39">Y/V</text><text x="22" y="34">X/U</text><text x="39" y="1">Abstand</text></g>
+                                <g class="scene-caption"><rect x="25" y="22" width="212" height="29" rx="14"/><circle cx="42" cy="36" r="4"/><text x="54" y="41">ARBEITSRAUM · ISOMETRISCH</text></g>
+                            </svg>
+                            <label class="dimension-field dimension-width">Breite X/U (mm)<input name="width" type="number" min="0.01" max="1000000" step="any" required aria-describedby="machine-dimensions-help"></label>
+                            <label class="dimension-field dimension-height">Raumhöhe Y/V (mm)<input name="height" type="number" min="0.01" max="1000000" step="any" required aria-describedby="machine-dimensions-help"></label>
+                            <label class="dimension-field dimension-span">Achsebenenabstand (mm)<input name="span" type="number" min="0.01" max="1000000" step="any" required aria-describedby="machine-dimensions-help"></label>
+                        </div>
+                    </div>
+                    <div class="fields">
                     <label>XY-Profil: Abstand von linker Achsebene<input name="z_xy" type="number" min="0" step="any" required></label>
                     <label>UV-Profil: Abstand von linker Achsebene<input name="z_uv" type="number" min="0" step="any" required></label>
                 </div></fieldset>

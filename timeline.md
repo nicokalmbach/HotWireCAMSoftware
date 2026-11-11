@@ -7,6 +7,18 @@ Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt
 
 ## 0.1.1
 
+- Räumliche Maßeingabe nach visueller Vorlage zu einem illustrativen Maschinenmodell
+  mit Metalloberflächen, Führungssäulen, Grundschienen, Schlitten und Schneiddraht
+  überarbeitet. Transparenter gelber Arbeitsraum, heller Rasterboden und weiße
+  Maßlinien mit direkt editierbaren Eingabekarten ergänzen die Anschauung.
+  Desktopdarstellung visuell geprüft; bestehender Edge-Browsertest einschließlich
+  Maßeingabe, mobilem Layout, Planung und Export außerhalb der Sandbox erneut bestanden.
+- Schematische räumliche Schneidraumskizze mit Eingabefeldern direkt auf den
+  Maßlinien für Breite, Höhe und Achsebenenabstand ergänzt. XY-/UV-Ebenen und
+  Achsen beschriftet, Fokusmarkierung und horizontales Scrollen auf kleinen
+  Bildschirmen umgesetzt; bestehende Formularwerte und Validierung weiterverwendet.
+  Erweiterter Edge-Browsertest außerhalb der Sandbox erfolgreich, einschließlich
+  mobiler Darstellung, Maßeübergabe, Planung und Export; Desktopansicht visuell geprüft.
 - Maschinenparameter und Bezugspunkte vor den Profilimport verschoben;
   Navigation und Schrittnummern angepasst, Berechnung hinter den Profileingaben.
 - Veraltete HTML-Ausgabe der laufenden lokalen Instanz auf Port 5001 diagnostiziert;

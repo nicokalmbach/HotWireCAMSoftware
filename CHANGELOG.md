@@ -7,6 +7,19 @@ keinen Versionswechsel.
 
 ## Unveröffentlicht
 
+- Schneidraumansicht nach visueller Vorlage als anschaulicheres Maschinenmodell
+  überarbeitet: metallische Führungssäulen, Grundschienen, Schlitten, orangefarbener
+  Schneiddraht und transparent gelber Arbeitsraum auf hellem Rasterboden.
+  Weiße Maßlinien mit hellen Eingabekarten zeigen X/U entlang der Grundschienen,
+  Y/V entlang der Säulen und den Abstand zwischen XY- und UV-Seite.
+  Desktopansicht visuell geprüft; Edge-Browsertest für Maßeingabe, mobiles Layout,
+  Planung und Export erneut außerhalb der Sandbox erfolgreich ausgeführt.
+- Räumliche Schneidraumskizze bei den Maschinenparametern ergänzt: Eingaben für
+  Breite X/U, Höhe Y/V und Achsebenenabstand liegen direkt auf den Maßlinien.
+  Fokus hebt das jeweilige Maß hervor; auf kleinen Bildschirmen ist die Skizze
+  horizontal scrollbar. Darstellung schematisch, bereits ohne Profilimport sichtbar.
+  Edge-Browsertest einschließlich mobiler Darstellung und Übergabe der Maße an
+  die Planung erfolgreich außerhalb der Sandbox ausgeführt; Desktopansicht visuell geprüft.
 - Seitenablauf umgestellt: Maschinenparameter, Profilebenen und Ein-/Ausfahrtspunkte
   stehen vor dem Profilimport. Navigation und Schrittnummern folgen dieser
   Reihenfolge; die Berechnung bleibt hinter den Profileingaben.

@@ -37,6 +37,9 @@ davon sind folgende lokale CAM-Funktionen implementiert:
 - Wahlweise XY-Datei und Kontur für beide Seiten verwenden; weitere
   Profileinstellungen bleiben je Seite einstellbar.
 - Skalierung, Positionierung und nutzerdefinierter Schneidraum mit Profilebenen.
+- Räumliches Maschinenmodell mit Führungssäulen, Schlitten, Grundschienen,
+  Schneiddraht und transparent gelbem Arbeitsraum; Maßeingaben direkt an Breite
+  X/U, Höhe Y/V und Achsebenenabstand. Illustrativ und vor dem Profilimport verfügbar.
 - Start/Ende als Weganteile, Laufrichtung und abschnittsweise Synchronisierung
   korrespondierender Ecken; unpassende Eckanzahlen werden abgewiesen.
 - Nennprogramm vor Abbrandkorrektur; Außen-/Innenoffsets und offene Links-/Rechtswege.

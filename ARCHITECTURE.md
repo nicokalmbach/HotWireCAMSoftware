@@ -156,6 +156,20 @@ Der Abbrandradius gilt konstant in beiden Profilebenen. Er ist ein Mess-/Erfahru
 
 ## G-Code und Vorschau
 
+Die Maschinenparameter enthalten ein statisches SVG-Maschinenmodell in räumlicher
+Projektion. Zwei Führungssäulen mit Schlitten und parallelen Grundschienen,
+Metallverläufe, Schatten und ein Bodenraster veranschaulichen den Maschinenaufbau.
+Ein transparenter gelber Quader markiert den Arbeitsraum, eine orange Linie den
+Schneiddraht. Breite X/U liegt entlang der Grundschienen, Höhe Y/V entlang der
+Säulen und der Achsebenenabstand zwischen den Maschinenseiten XY und UV.
+Reguläre HTML-Zahlenfelder für `width`, `height` und `span`
+liegen auf den zugehörigen Maßlinien; Feldnamen, Pflichtangaben und Grenzwerte
+bleiben Teil des Auftragsformulars. CSS hebt bei Fokus die jeweilige Maßlinie hervor.
+Das illustrative Modell benötigt weder Profile noch eine Berechnung und ist ausdrücklich nicht
+maßstabsgetreu: Eingegebene Werte verändern ihre Proportionen nicht. Auf kleinen
+Bildschirmen ist nur der Skizzenbereich horizontal scrollbar. Es entstehen keine
+zusätzlichen Bibliotheksabhängigkeiten.
+
 Generisches Profil: G21 (mm), G90 (absolut), G94; synchronisierte G1-Sätze mit
 X/Y/U/V und konstantem F, M3/S für Leistung und M5/M2 am Ende. F ist als mm/min
 entlang des vierdimensionalen Achsvektors definiert. Die Firmware muss diese

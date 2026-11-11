@@ -22,7 +22,22 @@ document.querySelector('iframe').onload = async function() {
     const failures=[]; w.addEventListener('error',e=>failures.push(e.message));
     try {
         const form=d.querySelector('#job-form');
+        const diagram=d.querySelector('.machine-diagram');
+        for(const name of ['width','height','span']) {
+            const input=form.elements[name];
+            if(!diagram.contains(input) || d.querySelectorAll('input[name="'+name+'"]').length!==1) throw new Error('Maßeingabe fehlt oder doppelt: '+name);
+            if(input.value!=='' || !input.required) throw new Error('Maschinenmaß vorbelegt oder optional: '+name);
+            input.focus();
+            if(!input.closest('label').matches(':focus-within')) throw new Error('Maßeingabe nicht fokussierbar');
+        }
+        this.style.width='360px';
+        await sleep(60);
+        if(d.documentElement.scrollWidth>d.documentElement.clientWidth) throw new Error('Seitenüberlauf bei mobiler Maßeingabe');
+        const scroller=d.querySelector('.machine-diagram-scroll');
+        if(scroller.scrollWidth<=scroller.clientWidth) throw new Error('Mobile Skizze nicht scrollbar');
+        this.style.width='1280px';
         d.querySelector('#demo').click();
+        if(form.elements.width.value!=='400' || form.elements.height.value!=='300' || form.elements.span.value!=='600') throw new Error('Demomaße in Skizze');
         form.requestSubmit();
         await waitFor(()=>!d.querySelector('#play').disabled);
         if(!d.querySelector('#download').disabled) throw new Error('Export ohne Steuerungsprofil');
@@ -51,6 +66,7 @@ document.querySelector('iframe').onload = async function() {
         form.requestSubmit();
         await waitFor(()=>!d.querySelector('#download').disabled);
         if(JSON.stringify(planned.xy)!==JSON.stringify(planned.uv)) throw new Error('Profil nicht für beide Seiten übernommen');
+        if(planned.width!==400 || planned.height!==300 || planned.span!==600) throw new Error('Skizzenmaße nicht an Planung übergeben');
         if(planned.xy_x!==60 || planned.uv_x!==70) throw new Error('Getrennte Positionen überschrieben');
         shared.click();
         if(d.querySelector('#file-uv').disabled || !form.elements.uv_contour.selectedOptions[0].textContent.includes('60.00')) throw new Error('Rechtes Profil nicht wiederhergestellt');
@@ -87,7 +103,7 @@ document.querySelector('iframe').onload = async function() {
         await waitFor(()=>!d.querySelector('#play').disabled);
         if(!d.querySelector('#warnings').textContent.includes('Innenkontur')) throw new Error('Lochwerkzeug');
         if(failures.length) throw new Error(failures.join(';'));
-        output.textContent='PASS: Demo, Planung, Vorschau, Regler, Ansichten, Export, Leistung, Invalidierung, Raumfehler, SVG-Uploads, Lochwerkzeug, beidseitige Profilübernahme';
+        output.textContent='PASS: Räumliche Maßeingabe, mobiles Layout, Demo, Planung, Vorschau, Regler, Ansichten, Export, Leistung, Invalidierung, Raumfehler, SVG-Uploads, Lochwerkzeug, beidseitige Profilübernahme';
     } catch(error) { output.textContent='FAIL: '+error.message+' | '+d.querySelector('#status').textContent; }
 };
 </script></body></html>'''
