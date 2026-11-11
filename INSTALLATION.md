@@ -108,7 +108,9 @@ Dann die oben beschriebenen Schritte manuell im Browser prüfen.
 ## Nach Änderungen
 
 Bei Änderungen an `requirements.txt` den Installationsbefehl erneut ausführen.
-Nach Änderungen am Python-Code oder an `version.py` den Server neu starten,
-da der Debug-Modus ausgeschaltet ist. Änderungen an HTML/CSS im Browser neu laden.
+Nach Änderungen am Python-Code, an `version.py` oder an HTML-Vorlagen den Server
+neu starten, da der Debug-Modus ausgeschaltet ist und Vorlagen im Speicher bleiben.
+Anschließend die Seite neu laden; bei Änderungen an CSS oder JavaScript mit
+`Strg+F5` neu laden, damit der Browser aktuelle Dateien verwendet.
 
 Bei Problemen hilft [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

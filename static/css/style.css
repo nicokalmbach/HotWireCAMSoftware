@@ -307,6 +307,8 @@ h1 {
     font-weight: 600;
 }
 
+#einstellungen { margin-bottom: 18px; }
+
 .workflow {
     display: grid;
     grid-template-columns: 1fr 1fr;

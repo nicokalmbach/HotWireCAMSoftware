@@ -7,6 +7,11 @@ keinen Versionswechsel.
 
 ## Unveröffentlicht
 
+- Seitenablauf umgestellt: Maschinenparameter, Profilebenen und Ein-/Ausfahrtspunkte
+  stehen vor dem Profilimport. Navigation und Schrittnummern folgen dieser
+  Reihenfolge; die Berechnung bleibt hinter den Profileingaben.
+- Hinweise zum lokalen Aktualisieren korrigiert: Auch geänderte HTML-Vorlagen
+  benötigen beim laufenden Server ohne Debug-Modus einen Neustart.
 - Checkbox bei der ersten Profileingabe ergänzt: XY-Datei und Konturauswahl
   auch für UV verwenden; übrige Profileinstellungen bleiben getrennt.
   Beim Abwählen wird ein zuvor geladenes UV-Profil wieder angezeigt.

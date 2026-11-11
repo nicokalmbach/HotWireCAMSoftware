@@ -16,6 +16,7 @@ Der Installer überschreibt keine vorhandenen Benutzer, Installationen oder Dien
 | Browser kann die Seite nicht öffnen | Prüfen, ob der Server ohne Fehlermeldung läuft, und `http://127.0.0.1:5001` verwenden. |
 | Browser öffnet sich beim Start nicht automatisch | `http://127.0.0.1:5001` manuell öffnen. Automatische Browseröffnung benötigt einen verfügbaren Standardbrowser und kann durch lokale Berechtigungen blockiert sein. |
 | Gestaltung fehlt oder bleibt veraltet | Seite mit `Strg+F5` neu laden und prüfen, ob `static/css/style.css` vorhanden ist. |
+| Neue Formularelemente fehlen trotz geänderter HTML-Datei | Der laufende Server kann noch die alte Vorlage im Speicher halten. Projektinstanz mit `Strg+C` beenden und über `start.cmd` neu starten, anschließend die Seite mit `Strg+F5` neu laden. Beim lokalen Fall auf Port 5001 lieferte der richtige Projektprozess eine alte Vorlage ohne die neue Profil-Checkbox aus; nach dem Neustart enthielt die HTTP-Antwort die Checkbox. |
 | Angezeigte Version bleibt unverändert | `version.py` speichern, den Server beenden und erneut starten. |
 | Import schlägt fehl | SVG oder ASCII-DXF mit unterstützten Konturen verwenden. Text in Pfade umwandeln, DXF-Blöcke auflösen. Z muss 0 sein; Details zum Formatumfang stehen in ARCHITECTURE.md. Maximal 4 MiB pro Anfrage und 20000 Punkte je Profil. |
 | DXF ist falsch skaliert | Einheiten im DXF-Header prüfen. Nur bei einheitenlosen Dateien gilt „mm pro Einheit“; Faktor vor dem erneuten Import setzen. |

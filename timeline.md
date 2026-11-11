@@ -7,6 +7,11 @@ Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt
 
 ## 0.1.1
 
+- Maschinenparameter und Bezugspunkte vor den Profilimport verschoben;
+  Navigation und Schrittnummern angepasst, Berechnung hinter den Profileingaben.
+- Veraltete HTML-Ausgabe der laufenden lokalen Instanz auf Port 5001 diagnostiziert;
+  Neustarthinweis für HTML-Vorlagen in Installation und Fehlerbehebung ergänzt.
+  Projektinstanz neu gestartet; Checkbox anschließend in der HTTP-Antwort bestätigt.
 - Option „Dieses Profil für beide Seiten verwenden“ bei der XY-Eingabe ergänzt.
   Datei und Kontur werden für UV übernommen, weitere Einstellungen bleiben
   getrennt; ein vorheriges UV-Profil bleibt beim Abwählen verfügbar.

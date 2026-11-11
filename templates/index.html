@@ -14,8 +14,8 @@
         <a class="brand" href="/"><span class="brand-mark">HW</span><span class="brand-name">HotWire<span>CAM</span></span></a>
         <div class="nav-label">Arbeitsbereich</div>
         <nav>
-            <a class="nav-link active" href="#profilimport" aria-current="location"><span class="nav-icon">01</span> Profilimport</a>
-            <a class="nav-link" href="#einstellungen"><span class="nav-icon">02</span> Schnittplanung</a>
+            <a class="nav-link active" href="#einstellungen" aria-current="location"><span class="nav-icon">01</span> Maschinenparameter</a>
+            <a class="nav-link" href="#profilimport"><span class="nav-icon">02</span> Profilimport</a>
             <a class="nav-link" href="#vorschau"><span class="nav-icon">03</span> Schneidvorschau</a>
             <a class="nav-link" href="#gcode"><span class="nav-icon">04</span> G-Code-Export</a>
         </nav>
@@ -29,33 +29,8 @@
         </section>
         <div class="notice"><span class="notice-icon">i</span><p>Alle Längen in mm. Maschinenmaße selbst eintragen. Der Export verwendet generisches XYUV-G-Code mit M3/S für den Stromregler. Firmware-Zuordnung und Materialparameter müssen bekannt sein.</p></div>
         <form id="job-form">
-            <section class="workflow" id="profilimport">
-            {% for name, title in [('xy', 'XY · linkes Profil'), ('uv', 'UV · rechtes Profil')] %}
-                <article class="panel import-panel">
-                    <div class="panel-heading"><div class="step-number">{{ loop.index }}</div><h2>{{ title }}</h2></div>
-                    {% if name == 'xy' %}
-                    <label class="check"><input type="checkbox" id="same-profile" aria-describedby="same-profile-help"> Dieses Profil für beide Seiten verwenden</label>
-                    <p class="helper" id="same-profile-help">Datei und Konturauswahl für UV übernehmen. Position, Skalierung, Start/Ende und Laufrichtung bleiben je Seite einstellbar.</p>
-                    {% endif %}
-                    <label class="file-field">Eigene SVG- oder DXF-Datei<input type="file" id="file-{{ name }}" accept=".svg,.dxf"></label>
-                    <label>Einheitenlose DXF: mm pro Einheit<input id="unit-{{ name }}" type="number" value="1" min="0.0001" max="10000" step="any"></label>
-                    <p class="panel-footnote">Der Faktor gilt beim nächsten Import ohne DXF-Einheitenangabe. Dateipfade werden nicht geprüft oder gespeichert.</p>
-                    <p id="info-{{ name }}" class="import-info">Noch keine Datei geladen.</p>
-                    <label>Kontur wählen<select name="{{ name }}_contour" id="contour-{{ name }}" disabled><option value="0">Zuerst Datei laden</option></select></label>
-                    <div class="fields">
-                        <label>Position {{ 'X' if name == 'xy' else 'U' }}<input name="{{ name }}_x" type="number" value="0" step="any" required></label>
-                        <label>Position {{ 'Y' if name == 'xy' else 'V' }}<input name="{{ name }}_y" type="number" value="0" step="any" required></label>
-                        <label>Skalierungsfaktor<input name="{{ name }}_scale" type="number" value="1" min="0.0001" max="10000" step="any" required></label>
-                        <label>Start auf Kontur (%)<input name="{{ name }}_start" type="number" value="0" min="0" max="100" step="any" required></label>
-                        <label>Ende auf Kontur (%)<input name="{{ name }}_end" type="number" value="100" min="0" max="100" step="any" required></label>
-                    </div>
-                    <label class="check"><input type="checkbox" name="{{ name }}_reverse"> Laufrichtung umkehren</label>
-                </article>
-            {% endfor %}
-            </section>
-            <p class="helper">Position = untere linke Ecke der gesamten Datei. Geschlossene Konturen beginnen am importierten Anfang und laufen gegen den Uhrzeigersinn. Start/Ende sind Weganteile nach Richtungswahl; gleiche Werte ergeben eine volle Runde. Ein Auftrag bearbeitet ein gewähltes Konturpaar; Innenkonturen separat planen.</p>
             <section class="panel settings-panel" id="einstellungen">
-                <div class="panel-heading"><div class="step-number">02</div><h2>Schneidraum &amp; Schnittplanung</h2></div>
+                <div class="panel-heading"><div class="step-number">01</div><h2>Maschinenparameter &amp; Schnittplanung</h2></div>
                 <fieldset><legend>Maschine und Bauteilposition</legend><div class="fields">
                     <label>Raumbreite X/U<input name="width" type="number" min="0.01" max="1000000" step="any" required></label>
                     <label>Raumhöhe Y/V<input name="height" type="number" min="0.01" max="1000000" step="any" required></label>
@@ -85,10 +60,35 @@
                     <label>S-Wert bei 100 % Leistung<input name="s_max" id="s-max" type="number" min="0.001" max="1000000000" step="any"></label>
                 </div><label class="check"><input type="checkbox" name="controller_confirmed" id="controller-confirmed"> Ich habe geprüft, dass meine Steuerung XYUV sowie G21/G90/G94 unterstützt und dass M3/S die Heizleistung vorgibt und M5 die Heizung ausschaltet.</label>
                 <p class="helper">Ohne diese Angaben ist die Vorschau verfügbar. Der Export setzt voraus, dass die Startposition bei ausgeschaltetem Draht manuell angefahren wird. Er enthält keine Referenzfahrt und keine automatische Anfahrt.</p></fieldset>
-                <button class="button button-primary" id="calculate" type="submit">Schneidweg berechnen</button>
             </section>
+            <section class="workflow" id="profilimport">
+            {% for name, title in [('xy', 'XY · linkes Profil'), ('uv', 'UV · rechtes Profil')] %}
+                <article class="panel import-panel">
+                    <div class="panel-heading"><div class="step-number">02</div><h2>{{ title }}</h2></div>
+                    {% if name == 'xy' %}
+                    <label class="check"><input type="checkbox" id="same-profile" aria-describedby="same-profile-help"> Dieses Profil für beide Seiten verwenden</label>
+                    <p class="helper" id="same-profile-help">Datei und Konturauswahl für UV übernehmen. Position, Skalierung, Start/Ende und Laufrichtung bleiben je Seite einstellbar.</p>
+                    {% endif %}
+                    <label class="file-field">Eigene SVG- oder DXF-Datei<input type="file" id="file-{{ name }}" accept=".svg,.dxf"></label>
+                    <label>Einheitenlose DXF: mm pro Einheit<input id="unit-{{ name }}" type="number" value="1" min="0.0001" max="10000" step="any"></label>
+                    <p class="panel-footnote">Der Faktor gilt beim nächsten Import ohne DXF-Einheitenangabe. Dateipfade werden nicht geprüft oder gespeichert.</p>
+                    <p id="info-{{ name }}" class="import-info">Noch keine Datei geladen.</p>
+                    <label>Kontur wählen<select name="{{ name }}_contour" id="contour-{{ name }}" disabled><option value="0">Zuerst Datei laden</option></select></label>
+                    <div class="fields">
+                        <label>Position {{ 'X' if name == 'xy' else 'U' }}<input name="{{ name }}_x" type="number" value="0" step="any" required></label>
+                        <label>Position {{ 'Y' if name == 'xy' else 'V' }}<input name="{{ name }}_y" type="number" value="0" step="any" required></label>
+                        <label>Skalierungsfaktor<input name="{{ name }}_scale" type="number" value="1" min="0.0001" max="10000" step="any" required></label>
+                        <label>Start auf Kontur (%)<input name="{{ name }}_start" type="number" value="0" min="0" max="100" step="any" required></label>
+                        <label>Ende auf Kontur (%)<input name="{{ name }}_end" type="number" value="100" min="0" max="100" step="any" required></label>
+                    </div>
+                    <label class="check"><input type="checkbox" name="{{ name }}_reverse"> Laufrichtung umkehren</label>
+                </article>
+            {% endfor %}
+            </section>
+            <p class="helper">Position = untere linke Ecke der gesamten Datei. Geschlossene Konturen beginnen am importierten Anfang und laufen gegen den Uhrzeigersinn. Start/Ende sind Weganteile nach Richtungswahl; gleiche Werte ergeben eine volle Runde. Ein Auftrag bearbeitet ein gewähltes Konturpaar; Innenkonturen separat planen.</p>
+            <button class="button button-primary" id="calculate" type="submit">Schneidweg berechnen</button>
         </form>
-        <p id="status" role="status" aria-live="polite">Zwei Profile laden und Schneidraum festlegen.</p>
+        <p id="status" role="status" aria-live="polite">Maschinenparameter und Bezugspunkte festlegen, danach Profile laden.</p>
         <section class="panel preview-panel" id="vorschau">
             <div class="panel-heading preview-heading"><div class="step-number">03</div><h2>Schneidvorschau</h2></div>
             <div class="preview-toolbar"><label>Ansicht<select id="view"><option value="wire">Räumliches Drahtmodell</option><option value="xy">Achsebene XY</option><option value="uv">Achsebene UV</option></select></label><label class="check"><input type="checkbox" id="show-nominal" checked> Nennkontur anzeigen</label></div>
