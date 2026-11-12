@@ -6,7 +6,7 @@ import unittest
 import ezdxf
 
 from app import app
-from cam import plan, synchronize
+from cam import plan, synchronize, check_room
 from profiles import CamError, import_profile
 
 
@@ -16,7 +16,7 @@ def rectangle(w=100, h=70):
 
 def job(**changes):
     data = dict(xy={'contours': [rectangle()]}, uv={'contours': [rectangle(60)]},
-                width=400, height=300, span=600, z_xy=100, z_uv=500,
+                width=400, height=300, span=600, block_width=400, block_height=300, block_span=400,
                 xy_x=60, xy_y=60, uv_x=70, uv_y=60, feed=100, power=30,
                 burn_radius=.5, segments=40, mode='outer')
     data.update(changes)
@@ -89,6 +89,42 @@ class ImportTests(unittest.TestCase):
 
 
 class PlanTests(unittest.TestCase):
+    def test_centered_machine_boundaries(self):
+        check_room([[-200,0,200,300]], 400,300)
+        for point in [[-200.01,0,0,0], [200.01,0,0,0],
+                      [0,0,-200.01,0], [0,0,200.01,0], [0,-.01,0,0]]:
+            with self.subTest(point=point), self.assertRaises(CamError):
+                check_room([point], 400,300)
+
+    def test_centered_block_distances_and_signed_coordinates(self):
+        profile = {'contours': [rectangle(100,70)]}
+        result = plan(job(xy=profile, uv=profile, xy_x=-50, uv_x=-50,
+                          block_width=100, block_height=130, block_span=300,
+                          burn_radius=0, controller_confirmed=True, s_max=1000))
+        self.assertEqual(result['room']['z_xy'], 150)
+        self.assertEqual(result['room']['z_uv'], 450)
+        self.assertEqual(min(p[0] for p in result['path']), -50)
+        self.assertEqual(max(p[0] for p in result['path']), 50)
+        self.assertIn('X-50.00000', result['gcode'])
+        changed = plan(job(xy=profile, uv=profile, xy_x=-50, uv_x=-50,
+                           block_width=100, block_height=130, block_span=600,
+                           burn_radius=0))
+        self.assertEqual(changed['room']['z_xy'], 0)
+        self.assertEqual(changed['room']['z_uv'], 600)
+
+    def test_invalid_block_dimensions_and_profile_fit(self):
+        for change in [dict(block_width=401), dict(block_height=301),
+                       dict(block_span=601), dict(block_span=float('nan')),
+                       dict(block_width=None), dict(block_height=-1),
+                       dict(block_width=100), dict(block_height=100)]:
+            with self.subTest(change=change), self.assertRaises(CamError):
+                plan(job(**change))
+
+    def test_legacy_distances_cannot_override_centering(self):
+        result = plan(job(z_xy=0, z_uv=1))
+        self.assertEqual(result['room']['z_xy'], 100)
+        self.assertEqual(result['room']['z_uv'], 500)
+
     def test_conical_part_and_full_round(self):
         result = plan(job())
         self.assertEqual(len(result['path']), len(result['sections']))
@@ -168,8 +204,8 @@ class PlanTests(unittest.TestCase):
             plan(job(xy=profile,uv=profile,mode='outer'))
 
     def test_out_of_room_projection_and_access(self):
-        for changes in [dict(width=20),dict(xy_x=-1),dict(z_xy=300,z_uv=301),
-                        dict(access=True,entry_x=-10,entry_y=0,entry_u=-10,entry_v=0,
+        for changes in [dict(width=20),dict(xy_x=-201),dict(block_span=1),
+                        dict(access=True,entry_x=-210,entry_y=0,entry_u=-210,entry_v=0,
                              exit_x=60,exit_y=60,exit_u=70,exit_v=60)]:
             with self.subTest(changes=changes), self.assertRaises(CamError):
                 plan(job(**changes))
@@ -185,7 +221,7 @@ class PlanTests(unittest.TestCase):
 
     def test_invalid_parameters_and_profiles(self):
         for changes in [dict(width=float('nan')),dict(feed=0),dict(power=101),
-                        dict(z_uv=100),dict(burn_radius=-1),dict(xy={'contours':[]}),
+                        dict(block_span=0),dict(burn_radius=-1),dict(xy={'contours':[]}),
                         dict(xy={'contours':[[[0,0],[10,10],[0,10],[10,0],[0,0]]]})]:
             with self.subTest(changes=changes), self.assertRaises(CamError):
                 plan(job(**changes))

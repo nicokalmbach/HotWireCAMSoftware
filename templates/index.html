@@ -130,9 +130,14 @@
                         </div>
                     </div>
                     <div class="fields">
-                    <label>XY-Profil: Abstand von linker Achsebene<input name="z_xy" type="number" min="0" step="any" required></label>
-                    <label>UV-Profil: Abstand von linker Achsebene<input name="z_uv" type="number" min="0" step="any" required></label>
-                </div></fieldset>
+                    <label>Blockbreite X/U (mm)<input name="block_width" type="number" min="0.01" max="1000000" step="any" required></label>
+                    <label>Blockhöhe Y/V (mm)<input name="block_height" type="number" min="0.01" max="1000000" step="any" required></label>
+                    <label>Blocklänge zwischen XY und UV (mm)<input name="block_span" type="number" min="0.001" max="1000000" step="any" required></label>
+                </div>
+                <p class="helper">Der Styroporblock steht mittig in X/U und zwischen den Achsebenen auf der Auflageebene Y/V = 0. X/U = 0 liegt in der Mitte des Verfahrwegs; negative und positive X/U-Werte sind möglich. Die Profile liegen auf den beiden Stirnflächen des Blocks.</p>
+                <p class="helper" id="block-distances" aria-live="polite">Maschinen- und Blockmaße eingeben, um die Abstände automatisch zu berechnen.</p>
+                <p class="helper">Maschinenablauf: Kontaktschalter manuell über die Pfeiltasten der Maschinensteuerung anfahren und damit den Nullpunkt setzen. Schalterposition bzw. Schalterversatz muss zum beschriebenen Koordinatensystem passen. Diese CAM-Anwendung liest keinen Schalter und steuert keine Achsen.</p>
+                </fieldset>
                 <fieldset><legend>Schneidparameter</legend><div class="fields">
                     <label>Vorschub F (mm/min, XYUV-Vektor)<input name="feed" type="number" min="0.001" max="1000000" step="any" required></label>
                     <label>Schneidleistung (%)<input name="power" type="number" min="0" max="100" step="any" required></label>

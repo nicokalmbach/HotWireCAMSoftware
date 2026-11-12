@@ -74,7 +74,7 @@ python app.py
 
 1. Die Startseite zeigt „HotWireCamSoftware“ an.
 2. Gestaltung und Navigation werden dargestellt.
-3. Die Fußzeile zeigt die Versionsnummer aus `version.py` (aktuell `0.1.1`).
+3. Die Fußzeile zeigt die Versionsnummer aus `version.py` (aktuell `0.2.0`).
 4. „Demobeispiel laden“ wählen, anschließend „Schneidweg berechnen“.
 5. Das Drahtmodell erscheint; Schieberegler, Wiedergabe und XY-/UV-Ansicht ausprobieren.
 6. Alternativ `examples/profil_xy.svg` und `examples/profil_uv.svg` laden, Maße und

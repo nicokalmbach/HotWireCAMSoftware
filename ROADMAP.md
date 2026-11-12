@@ -1,14 +1,14 @@
 # Roadmap
 
 Die Versionsziele stammen aus der bisherigen Projektplanung. Sie sind geplante
-Meilensteine ohne festgelegte Termine. Die Anwendung trägt Version `0.1.1`,
+Meilensteine ohne festgelegte Termine. Die Anwendung trägt Version `0.2.0`,
 der ursprüngliche Hardware-Meilenstein 0.1.0 ist aber erst teilweise umgesetzt.
 
 | Zielversion | Schwerpunkt | Stand |
 | --- | --- | --- |
 | 0.1.0 | Projektstruktur und eine Achse | Grundgerüst vorhanden; Achsensteuerung offen |
 | 0.1.1 | CAM-Stand und Debian-LXC-Installation | CAM und Installer implementiert; vollständige LXC-Installation noch zu prüfen |
-| 0.2.0 | Referenzschalter | Geplant |
+| 0.2.0 | Referenzschalter und zentriertes Werkstück | CAM-Koordinaten und automatische Blockabstände umgesetzt; Schalterauswertung und Tastatursteuerung offen |
 | 0.3.0 | Referenzfahrt | Geplant |
 | 0.4.0 | Mehrere Achsen | Geplant |
 | 0.5.0 | Koordinierte Bewegungen | Geplant |
@@ -28,7 +28,7 @@ der ursprüngliche Hardware-Meilenstein 0.1.0 ist aber erst teilweise umgesetzt.
 - G-Code-Dialekt, F-Vorschubinterpretation und M3/S/M5-Zuordnung zum Stromregler
   bestätigen; Maschinenmaße und Material-Abbrand praktisch ermitteln.
 
-## Umgesetzte CAM-Funktionen (Stand 0.1.1)
+## Umgesetzte CAM-Funktionen (Stand 0.2.0)
 
 Die bisherige Zielversionstabelle beschreibt Hardware-Meilensteine. Unabhängig
 davon sind folgende lokale CAM-Funktionen implementiert:
@@ -36,7 +36,9 @@ davon sind folgende lokale CAM-Funktionen implementiert:
 - Zwei SVG-/DXF-Profile, Einheitenumrechnung und Auswahl einzelner Konturen.
 - Wahlweise XY-Datei und Kontur für beide Seiten verwenden; weitere
   Profileinstellungen bleiben je Seite einstellbar.
-- Skalierung, Positionierung und nutzerdefinierter Schneidraum mit Profilebenen.
+- Skalierung, Positionierung und nutzerdefinierter Schneidraum; X/U-Nullpunkt mittig,
+  Y/V = 0 auf der Auflageebene. Zentrierter Block mit drei Maßen, automatisch
+  berechneten Profilebenen und Prüfung der Nennkonturen gegen die Blockmaße.
 - Räumliches Maschinenmodell mit Führungssäulen, Schlitten, Grundschienen,
   Schneiddraht und transparent gelbem Arbeitsraum; Maßeingaben direkt an Breite
   X/U, Höhe Y/V und Achsebenenabstand. Illustrativ und vor dem Profilimport verfügbar.

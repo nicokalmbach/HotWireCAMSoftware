@@ -11,7 +11,7 @@ Eine Maschinenanbindung und thermische Simulation sind nicht implementiert. Masc
 
 ## Schnittdaten vorbereiten
 
-1. Raumbreite X/U, Raumhöhe Y/V und Abstand der Achsebenen direkt an den Maßlinien des räumlichen Maschinenmodells eintragen (mm). Führungssäulen, Schlitten und Grundschienen zeigen die Orientierung; der Arbeitsraum ist transparent gelb und der Schneiddraht orange dargestellt. Das Modell ist bereits ohne Profile sichtbar und nicht maßstabsgetreu. Auf kleinen Bildschirmen lässt es sich horizontal scrollen. Anschließend die Lage der beiden Profilebenen eintragen.
+1. Raumbreite X/U, Raumhöhe Y/V und Abstand der Achsebenen direkt an den Maßlinien des räumlichen Maschinenmodells eintragen (mm). Führungssäulen, Schlitten und Grundschienen zeigen die Orientierung; der Arbeitsraum ist transparent gelb und der Schneiddraht orange dargestellt. Das Modell ist bereits ohne Profile sichtbar und nicht maßstabsgetreu. Auf kleinen Bildschirmen lässt es sich horizontal scrollen. Blockbreite X/U, Blockhöhe Y/V und Blocklänge zwischen den Achsebenen eingeben. Der Block steht mittig in X/U und zwischen den Drahtführungen, mit seiner Unterseite auf Y/V = 0. Die Abstände zu den Achsebenen berechnen sich automatisch: je Seite `(Achsebenenabstand − Blocklänge) / 2`. Die Profile liegen auf den beiden Stirnflächen des Blocks.
 2. Für XY und UV jeweils eine SVG- oder DXF-Datei laden. Alternativ bei der ersten Profileingabe „Dieses Profil für beide Seiten verwenden“ aktivieren: Datei und Konturauswahl von XY gelten dann auch für UV. Position, Skalierung, Start/Ende und Laufrichtung bleiben je Seite einstellbar. Nach dem Abwählen steht ein zuvor geladenes UV-Profil wieder zur Verfügung. Der Inhalt wird im Speicher verarbeitet; Dateipfade werden weder kontrolliert noch gespeichert. Jede Datei darf mehrere Konturen enthalten.
 3. Je eine Kontur auswählen. Ein Auftrag bearbeitet ein Konturpaar; Löcher separat vor der Außenkontur planen. SVG-Maße/viewBox werden mit 96 dpi in mm umgerechnet und Y nach oben gespiegelt. DXF-Einheiten stammen aus dem Header; für einheitenlose DXF ist der Faktor einzugeben. Profilpositionen beziehen sich auf die untere linke Ecke der gesamten jeweiligen Datei; die Lage ihrer Innenkonturen bleibt erhalten.
 4. Start/Ende in Prozent der Konturlänge und gegebenenfalls Laufrichtung einstellen. Geschlossene Profile werden zunächst gegen den Uhrzeigersinn orientiert. Gleiche Start-/Endwerte ergeben eine volle Runde; offene Profile benötigen Ende > Start nach Richtungswahl.
@@ -29,8 +29,18 @@ Die Website zeigt sie automatisch in der Fußzeile an. Bei einem Versionswechsel
 diesen Wert sowie Changelog, [timeline.md](timeline.md) und betroffene Anleitungen
 aktualisieren; anschließend die Anwendung neu starten.
 
-Die aktuelle Version ist `0.1.1`, die ursprüngliche Startversion war `0.1.0`.
+Die aktuelle Version ist `0.2.0`, die ursprüngliche Startversion war `0.1.0`.
 Die Achsensteuerung für den ersten Hardware-Meilenstein steht noch aus.
+
+Seit 0.2.0 gilt X/U = 0 in der Mitte des Verfahrwegs; die Raumgrenzen sind
+`−Breite/2` bis `+Breite/2`. Y/V beginnt auf der Auflageebene bei 0 und reicht
+bis zur Raumhöhe. Profilpositionen und Ein-/Ausfahrtspunkte verwenden dieses
+Koordinatensystem; alte Positionen müssen entsprechend angepasst werden.
+Der vorgesehene Maschinenablauf setzt den Nullpunkt mit einem Kontaktschalter,
+der manuell per Pfeiltasten der Maschinensteuerung angefahren wird. Schalterlage
+oder Schalterversatz müssen den zentralen X/U-Nullpunkt ergeben. Schalterauswertung,
+Tastatursteuerung und Maschinenkommunikation sind in dieser CAM-Anwendung noch
+nicht implementiert.
 
 Die geplanten Meilensteine und ihr Status stehen in der [Roadmap](ROADMAP.md).
 

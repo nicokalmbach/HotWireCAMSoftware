@@ -107,7 +107,10 @@ vorher aufgelöst werden. Header-Einheiten haben Vorrang vor dem Eingabefaktor.
 `POST /api/plan` erhält zwei importierte Profile (`xy`, `uv`) und die Formularfelder
 als JSON. Fehlerhafte Eingaben ergeben HTTP 400 mit `error`, zu große Anfragen 413.
 Die Antwort enthält die nominelle Achsbahn `nominal`, korrigierte Achsbahn `path`,
-Punkte in den Profilebenen `sections`, Start/Ende, Raummaße, Hinweise und optional `gcode`.
+Punkte in den Profilebenen `sections`, Start/Ende, Raummaße, Blockmaße (`block`), Hinweise und optional `gcode`.
+Seit 0.2.0 sind `block_width`, `block_height` und `block_span` Pflichtfelder.
+Manuelle Eingaben `z_xy`/`z_uv` werden nicht mehr ausgewertet; diese Werte werden
+nur noch als berechnete Profilebenen in `room` zurückgegeben.
 
 ## Geometrie und Abbrand
 
@@ -134,12 +137,18 @@ Punkte in den Profilebenen `sections`, Start/Ende, Raummaße, Hinweise und optio
    erneut über Eckpaare unterteilen. Auch durch Offsets veränderte Eckanzahlen
    müssen zusammenpassen; andernfalls wird abgebrochen. Erst zum Schluss werden
    die G-Code-Textzeilen geschrieben.
-4. Bauteilprofile liegen bei `z_xy` und `z_uv` innerhalb des Achsabstands `span`.
+4. Der Block steht mittig in X/U und zwischen den Achsebenen, unten bei Y/V = 0.
+   `block_width <= width`, `block_height <= height`, `block_span <= span`;
+   alle Maße müssen positiv sein (Blocklänge mindestens 0,001 mm).
+   Die Stirnflächen ergeben `z_xy = (span − block_span)/2` und
+   `z_uv = (span + block_span)/2`, beide ab linker Achsebene gemessen.
    Der gerade Draht wird linear auf die Achsebenen bei z=0 und z=span extrapoliert.
    Auch dort müssen nominelle und korrigierte Wege inklusive Ein-/Ausfahrt im Raum
-   bleiben. Der Raum ist ein Quader mit Ursprung 0/0 und gleicher Breite/Höhe an beiden
-   Achsebenen. Alle Konturen der Dateien müssen in den Profilebenen hinein passen;
+   bleiben. X/U reicht von `−width/2` bis `+width/2`, Y/V von 0 bis `height`.
+   Alle importierten Nennkonturen müssen in die Blockstirnflächen passen;
    die Achsprojektion wird für das ausgewählte Konturpaar geprüft.
+   Abbrandwege und Zugangspunkte dürfen außerhalb des Blocks liegen, müssen aber
+   einschließlich Achsprojektion innerhalb des Maschinenraums bleiben.
 5. Nominelle und korrigierte vollständige Profile und tatsächliche Teilschnitte
    werden an 21 Positionen zwischen den Profilebenen auf Überschneidung/Kollaps geprüft.
    Eine konische Form ist zulässig; auf einen Punkt kollabierte Profile sind es nicht.
@@ -155,6 +164,14 @@ Neigungsabhängigkeit des Abbrands, Spannmittel und Hindernisse sind nicht model
 Der Abbrandradius gilt konstant in beiden Profilebenen. Er ist ein Mess-/Erfahrungswert.
 
 ## G-Code und Vorschau
+
+Der vorgesehene Maschinenablauf sieht das manuelle Anfahren eines Kontaktschalters
+per Pfeiltasten der Maschinensteuerung vor. Die Nullpunktzuordnung über Schalterlage
+oder Schalterversatz muss X/U mittig und Y/V auf der Auflageebene ergeben.
+Die CAM-Anwendung übernimmt dieses Koordinatensystem in Planung und G-Code;
+Schalterauswertung, Tastatur-Jogging und Maschinenanbindung sind nicht implementiert.
+Die berechnete Canvas-Vorschau zeigt Blockstirnflächen gestrichelt und die
+X/U-Mittellinie; das statische Maschinenmodell bleibt illustrativ.
 
 Die Maschinenparameter enthalten ein statisches SVG-Maschinenmodell in räumlicher
 Projektion. Zwei Führungssäulen mit Schlitten und parallelen Grundschienen,

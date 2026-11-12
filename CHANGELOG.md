@@ -7,6 +7,28 @@ keinen Versionswechsel.
 
 ## Unveröffentlicht
 
+### 0.2.0
+
+- Blockbreite, Blockhöhe und Blocklänge ersetzen die manuell eingegebenen
+  Profilebenen. Der Block steht mittig in X/U und zwischen den Achsebenen.
+  Gleiche Abstände je Seite werden automatisch berechnet und angezeigt.
+- X/U-Nullpunkt in die Verfahrwegmitte verlegt; Y/V = 0 liegt auf der
+  Auflageebene. Planung, Raumprüfung, Vorschau und G-Code verwenden diese Lage.
+  Alle Nennkonturen werden gegen die Blockmaße geprüft; Blockstirnflächen und
+  Mittellinie sind in der berechneten Vorschau markiert. Demo angepasst.
+- Kontaktschalter und manuelles Anfahren per Pfeiltasten als Maschinenablauf
+  beschrieben. Maschinenanbindung, Schalterauswertung und Tastatur-Jogging
+  bleiben offen; der Hardware-Meilenstein ist damit noch nicht vollständig.
+- Versionsnummer und betroffene Anleitungen auf 0.2.0 aktualisiert.
+- Regressionstests für Zentrierung, negative Koordinaten, Raumgrenzen und
+  ungültige Blockmaße ergänzt; Browserprüfungen an die neuen Felder angepasst.
+- Prüfung: 28 von 30 automatisierten Tests bestanden, einschließlich aller
+  neuen Tests. Zwei Fehler auch im unveränderten Git-Stand reproduziert
+  (Teilschnitt/Eckzuordnung und erwartete Abweisung einer Drahtfläche).
+  Edge-Browserprüfung ohne auswertbaren DOM-Bericht; Darstellung nicht abschließend geprüft.
+
+### Bisherige Änderungen im Entwicklungsstand 0.1.1
+
 - Schneidraumansicht nach visueller Vorlage als anschaulicheres Maschinenmodell
   überarbeitet: metallische Führungssäulen, Grundschienen, Schlitten, orangefarbener
   Schneiddraht und transparent gelber Arbeitsraum auf hellem Rasterboden.

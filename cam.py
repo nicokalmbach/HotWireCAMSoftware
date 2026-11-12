@@ -157,13 +157,17 @@ def path_blocks(a, b, data):
 
 def check_room(blocks, width, height):
     for p in blocks:
-        if any(v < -1e-7 or v > limit+1e-7 for v,limit in zip(p, (width,height,width,height))):
+        if any(v < low-1e-7 or v > high+1e-7
+               for v,low,high in zip(p, (-width/2,0,-width/2,0),
+                                     (width/2,height,width/2,height))):
             raise CamError('Bauteil oder Drahtweg liegt außerhalb des Schneidraums (einschließlich Achsprojektion/Ein- und Ausfahrt).')
 
 
 def gcode(blocks, feed, power, s_max):
     # F ist die Länge des vierdimensionalen Achsvektors pro Minute (G94).
     lines = ['; HotWireCAM - generischer XYUV-Entwurf',
+             '; Nullpunkt: X/U mittig, Y/V auf Auflageebene. Werkstueck mittig ausrichten.',
+             '; Nullpunkt zuvor an der Maschinensteuerung per Kontaktschalter setzen.',
              '; Startposition vor dem Einschalten manuell bei ausgeschaltetem Draht anfahren.',
              '; Stromregler: S linear zur eingestellten Leistung; Firmware muss dies unterstuetzen.',
              'G21', 'G90', 'G94', 'M5',
@@ -178,10 +182,11 @@ def plan(data):
     width = number(data, 'width', .01, 1e6)
     height = number(data, 'height', .01, 1e6)
     span = number(data, 'span', .01, 1e6)
-    z0 = number(data, 'z_xy', 0, span)
-    z1 = number(data, 'z_uv', 0, span)
-    if z1-z0 < .001:
-        raise CamError('Profilebenen müssen mindestens 0,001 mm auseinanderliegen (XY vor UV).')
+    block_width = number(data, 'block_width', .01, width)
+    block_height = number(data, 'block_height', .01, height)
+    block_span = number(data, 'block_span', .001, span)
+    z0 = (span-block_span)/2
+    z1 = (span+block_span)/2
     count = int(number(data, 'segments', 4, 2000, 200))
     feed = number(data, 'feed', .001, 1e6)
     power = number(data, 'power', 0, 100)
@@ -191,7 +196,7 @@ def plan(data):
         raise CamError('Unbekannte Korrekturseite.')
     profiles = [prepared(data, name) for name in ('xy','uv')]
     for *_, contours in profiles:
-        check_room([p+p for contour in contours for p in contour], width, height)
+        check_room([p+p for contour in contours for p in contour], block_width, block_height)
     if profiles[0][1] != profiles[1][1]:
         raise CamError('Beide gewählten Konturen müssen entweder offen oder geschlossen sein.')
     closed = profiles[0][1]
@@ -253,4 +258,5 @@ def plan(data):
     return {'nominal': nominal_axes, 'path': blocks, 'sections': cut_sections,
             'gcode': code, 'warnings': warnings, 'segments': len(ca)-1,
             'room': {'width':width,'height':height,'span':span,'z_xy':z0,'z_uv':z1},
+            'block': {'width':block_width,'height':block_height,'span':block_span},
             'start':blocks[0], 'end':blocks[-1]}

@@ -21,7 +21,9 @@ Der Installer überschreibt keine vorhandenen Benutzer, Installationen oder Dien
 | Import schlägt fehl | SVG oder ASCII-DXF mit unterstützten Konturen verwenden. Text in Pfade umwandeln, DXF-Blöcke auflösen. Z muss 0 sein; Details zum Formatumfang stehen in ARCHITECTURE.md. Maximal 4 MiB pro Anfrage und 20000 Punkte je Profil. |
 | DXF ist falsch skaliert | Einheiten im DXF-Header prüfen. Nur bei einheitenlosen Dateien gilt „mm pro Einheit“; Faktor vor dem erneuten Import setzen. |
 | SVG steht vertikal anders als im Editor | SVG-Y wird beim Import gespiegelt, damit Maschinen-Y nach oben zeigt. Die Datei wird danach mit ihrer unteren linken Ecke positioniert. |
-| Bauteil liegt außerhalb des Schneidraums | Auch projizierte Achspositionen, Abbrand und Ein-/Ausfahrt müssen hineinpassen. Bei schrägem Draht können die Achsen weiter außen liegen als die Bauteilprofile. Positionen und Abstände der Profilebenen prüfen. |
+| Bauteil liegt außerhalb des Schneidraums | Seit 0.2.0 gilt X/U zwischen −Raumbreite/2 und +Raumbreite/2, Y/V zwischen 0 und Raumhöhe. Alle Nennkonturen müssen zusätzlich in den zentrierten Block passen. Auch projizierte Achspositionen, Abbrand und Ein-/Ausfahrt müssen in den Maschinenraum passen. Bei schrägem Draht können die Achsen weiter außen liegen als die Bauteilprofile. Blockmaße und Profilpositionen prüfen. |
+| Alte Aufträge melden fehlende Blockmaße | Seit 0.2.0 sind Blockbreite, Blockhöhe und Blocklänge Pflichtangaben. Die Profilebenen werden daraus automatisch berechnet; bisherige manuelle Abstände werden nicht übernommen. Profil- und Zugangspunkte auf den zentralen X/U-Nullpunkt umstellen. |
+| Pfeiltasten bewegen keine Achse / Schalter setzt in der Website keinen Nullpunkt | Die CAM-Anwendung hat keine Maschinenanbindung. Manuelles Anfahren und Nullpunktsetzen erfolgen an der Maschinensteuerung. Schalterlage oder Schalterversatz müssen X/U = 0 in der Verfahrwegmitte ergeben. |
 | Abbrand lässt die Kontur kollabieren | Eingetragenen Radius prüfen: Er ist die halbe Schnittbreite. Zu kleine Innenkonturen oder Engstellen können nach der Korrektur verschwinden. Profil ändern oder einen realistisch gemessenen kleineren Radius verwenden. |
 | Zwischenquerschnitt kollabiert oder überschneidet sich | Korrespondierende Startpunkte, Endpunkte und Laufrichtungen beider Profile prüfen. Unterschiedliche Ausgangspunkte können einen verdrehten Drahtweg erzeugen. |
 | Eckzuordnung nicht eindeutig | Beide Schnittverläufe benötigen gleich viele Richtungswechsel in korrespondierender Reihenfolge. Start/Ende und Laufrichtung prüfen; Kurven müssen passend unterteilt sein, da auch ihre nichtkollinearen Stützpunkte zählen. Zusätzliche Punkte auf geraden Kanten sind unkritisch. Die Prüfung gilt auch nach Abbrandkorrektur und für vollständige Konturen bei Teilschnitten. Es wird kein Export mit unpassender Eckanzahl erzeugt. |
@@ -60,6 +62,13 @@ bestätigte Lösung. Bei verwalteten Geräten die konkrete Blockierung mit der I
 klären. Sicherheitsrichtlinien werden vom Starter nicht verändert.
 
 ## Ein Problem nachvollziehbar festhalten
+
+Beim Prüfstand 0.2.0 bestehen 28 von 30 Tests. Die Fehler in
+`test_partial_contour_start_end` (Eckzuordnung im Teilschnitt) und
+`test_crossed_wire_surface` (erwartete Abweisung fehlt) sind auch mit Code und
+Tests aus dem unveränderten vorherigen Git-Stand reproduzierbar. Eine Lösung
+ist noch offen. Der Edge-Test lieferte in dieser Prüfung keinen DOM-Bericht;
+das ist kein erfolgreicher Nachweis der Browserdarstellung.
 
 Bei ungelösten Problemen die Python-Version, Anwendungsversion, ausgeführten Befehle,
 Fehlermeldung sowie erwartetes und tatsächliches Verhalten notieren. Keine Zugangsdaten

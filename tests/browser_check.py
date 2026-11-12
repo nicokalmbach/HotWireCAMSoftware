@@ -38,6 +38,8 @@ document.querySelector('iframe').onload = async function() {
         this.style.width='1280px';
         d.querySelector('#demo').click();
         if(form.elements.width.value!=='400' || form.elements.height.value!=='300' || form.elements.span.value!=='600') throw new Error('Demomaße in Skizze');
+        if(form.elements.z_xy || form.elements.z_uv) throw new Error('Manuelle Profilebenen vorhanden');
+        if(!d.querySelector('#block-distances').textContent.includes('100.000 mm')) throw new Error('Automatischer Abstand');
         form.requestSubmit();
         await waitFor(()=>!d.querySelector('#play').disabled);
         if(!d.querySelector('#download').disabled) throw new Error('Export ohne Steuerungsprofil');
@@ -67,14 +69,15 @@ document.querySelector('iframe').onload = async function() {
         await waitFor(()=>!d.querySelector('#download').disabled);
         if(JSON.stringify(planned.xy)!==JSON.stringify(planned.uv)) throw new Error('Profil nicht für beide Seiten übernommen');
         if(planned.width!==400 || planned.height!==300 || planned.span!==600) throw new Error('Skizzenmaße nicht an Planung übergeben');
-        if(planned.xy_x!==60 || planned.uv_x!==70) throw new Error('Getrennte Positionen überschrieben');
+        if(planned.block_width!==300 || planned.block_height!==200 || planned.block_span!==400) throw new Error('Blockmaße nicht übergeben');
+        if(planned.xy_x!==-50 || planned.uv_x!==-30) throw new Error('Getrennte Positionen überschrieben');
         shared.click();
         if(d.querySelector('#file-uv').disabled || !form.elements.uv_contour.selectedOptions[0].textContent.includes('60.00')) throw new Error('Rechtes Profil nicht wiederhergestellt');
         form.elements.width.value=1;
         form.elements.width.dispatchEvent(new w.Event('input',{bubbles:true}));
         if(!d.querySelector('#download').disabled) throw new Error('Veralteter Export');
         form.requestSubmit();
-        await waitFor(()=>d.querySelector('#status').textContent.includes('außerhalb'));
+        await waitFor(()=>d.querySelector('#status').textContent.includes('block_width'));
         d.querySelector('#demo').click();
         shared.click();
         for(const name of ['xy','uv']) {

@@ -5,6 +5,32 @@ Für jede neue Version einen eigenen Eintrag mit den tatsächlich durchgeführte
 selben Arbeitsschritt aktualisieren. Eine Versionsnummer dokumentiert den
 Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt.
 
+## 0.2.0
+
+- Mittige Werkstückausrichtung umgesetzt: Blockbreite X/U, Blockhöhe Y/V und
+  Blocklänge zwischen den Drahtführungen sind Pflichtangaben. Beide Stirnflächen
+  werden automatisch symmetrisch zwischen den Achsebenen angeordnet.
+- X/U-Koordinaten reichen von −Raumbreite/2 bis +Raumbreite/2; Y/V beginnt
+  auf der Auflageebene bei 0. Raumprüfung, Planung, G-Code und Canvas-Vorschau
+  angepasst; Blockstirnflächen und Mittellinie dargestellt. Demowerte angepasst.
+- Nennkonturen aller Dateien müssen in den Block passen; Abbrand und Zugänge
+  dürfen über den Block hinausreichen, solange die Achswege im Maschinenraum bleiben.
+- Nullpunktsetzen per Kontaktschalter mit manuellem Anfahren über Pfeiltasten
+  der Maschinensteuerung dokumentiert. Schalterlage bzw. Schalterversatz muss
+  zum zentralen X/U-Nullpunkt passen. Keine Maschinenanbindung implementiert.
+- Versionsnummer, Projekteinstieg, Architektur, Roadmap und betroffene
+  Installations- und Fehlerhinweise konsistent aktualisiert.
+- Regressionstests für automatische Abstände, negative Koordinaten, beidseitige
+  Raumgrenzen und Blockvalidierung ergänzt; UI-Test auf neue Eingaben umgestellt.
+
+Prüfstand: 28 von 30 automatisierten Tests bestanden, einschließlich aller neuen
+Tests. Zwei bereits im unveränderten Git-Stand
+reproduzierbare Fehler bleiben offen: `test_partial_contour_start_end`
+(unterschiedliche Eckanzahl im Teilschnitt) und `test_crossed_wire_surface`
+(erwartete Abweisung erfolgt nicht). Edge lieferte bei der Browserprüfung
+keinen auswertbaren DOM-Bericht; zusätzlich trat ein Fehler beim Aufräumen
+des Browserprofils auf. Keine Hardwareprüfung oder LXC-Installation durchgeführt.
+
 ## 0.1.1
 
 - Räumliche Maßeingabe nach visueller Vorlage zu einem illustrativen Maschinenmodell

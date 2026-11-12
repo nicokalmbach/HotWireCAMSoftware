@@ -139,7 +139,15 @@ for (const name of ['xy', 'uv']) {
         }
     });
 }
-form.addEventListener('input', invalidate);
+function updateBlockDistances() {
+    const values = ['width','height','span','block_width','block_height','block_span'].map(key => Number(form.elements[key].value));
+    const [width,height,span,bw,bh,bs] = values;
+    const valid = values.every(v => Number.isFinite(v) && v > 0) && bw <= width && bh <= height && bs <= span;
+    document.querySelector('#block-distances').textContent = valid
+        ? `Abstand je Seite zwischen Block und Achsebene: ${((span-bs)/2).toFixed(3)} mm. Profilebenen ab linker Achsebene: XY ${((span-bs)/2).toFixed(3)} mm, UV ${((span+bs)/2).toFixed(3)} mm. Freiraum in X/U je Seite: ${((width-bw)/2).toFixed(3)} mm.`
+        : 'Gültige Maschinen- und Blockmaße eingeben. Der Block muss vollständig in den Arbeitsraum passen.';
+}
+form.addEventListener('input', () => {updateBlockDistances(); invalidate();});
 function updateAccess() {
     document.querySelectorAll('#access-fields input').forEach(input => {
         input.disabled = !form.elements.access.checked;
@@ -185,7 +193,7 @@ function draw() {
     const {width, height, span} = result.room;
     const view = document.querySelector('#view').value;
     const projection = (x,y,z) => view === 'wire' ? [x+z*.65, -y+z*.25] : [x,-y];
-    const box = [[0,0],[width,0],[width,height],[0,height],[0,0]];
+    const box = [[-width/2,0],[width/2,0],[width/2,height],[-width/2,height],[-width/2,0]];
     const corners = [0,span].flatMap(z => box.map(([x,y]) => projection(x,y,z)));
     const xs = corners.map(p=>p[0]), ys = corners.map(p=>p[1]);
     const minX = Math.min(...xs), minY = Math.min(...ys);
@@ -196,6 +204,11 @@ function draw() {
         points.forEach((p,i)=>i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.stroke(); ctx.setLineDash([]);
     }
     for (const z of view === 'wire' ? [0,span] : [0]) stroke(box.map(([x,y])=>project(x,y,z)), '#52636f');
+    for (const z of view === 'wire' ? [result.room.z_xy,result.room.z_uv] : [view === 'uv' ? span : 0]) {
+        const {width: bw, height: bh} = result.block;
+        stroke([[-bw/2,0],[bw/2,0],[bw/2,bh],[-bw/2,bh],[-bw/2,0]].map(([x,y])=>project(x,y,z)), '#c9ba69', true);
+    }
+    for (const z of view === 'wire' ? [0,span] : [0]) stroke([project(0,0,z),project(0,height,z)], '#697786', true);
     if (view === 'wire') {
         box.slice(0,4).forEach(([x,y])=>stroke([project(x,y,0),project(x,y,span)], '#283845'));
         const every = Math.max(1, Math.floor(result.path.length/45));
@@ -247,10 +260,12 @@ document.querySelector('#demo').addEventListener('click', () => {
         const size = name==='xy' ? 100 : 60;
         setProfile(name, {contours:[[[0,0],[size,0],[size,70],[0,70],[0,0]], [[20,20],[30,20],[30,30],[20,30],[20,20]]], notes:['Demogeometrie in mm; keine Maschinenvorgaben.']}, 'Demo: Rechteck mit Innenkontur');
     }
-    const demo = {width:400,height:300,span:600,z_xy:100,z_uv:500,xy_x:60,xy_y:60,uv_x:70,uv_y:60,feed:100,power:30,burn_radius:.5};
+    const demo = {width:400,height:300,span:600,block_width:300,block_height:200,block_span:400,xy_x:-50,xy_y:60,uv_x:-30,uv_y:60,feed:100,power:30,burn_radius:.5};
     for(const [key,value] of Object.entries(demo)) form.elements[key].value=value;
     updateSharedProfile();
     updateAccess();
+    updateBlockDistances();
     statusText.textContent='Demobeispiel geladen. Alle Maße und Schnittparameter sind ausschließlich Beispieldaten. Schneidweg berechnen, um die Vorschau zu öffnen.';
 });
+updateBlockDistances();
 draw();
