@@ -7,6 +7,7 @@
     <title>HotWireCamSoftware</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="{{ url_for('static', filename='js/workspace.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/program.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/cam.js') }}" defer></script>
 </head>
 <body>
@@ -137,23 +138,30 @@
                 </div>
                 <p class="helper">Der Styroporblock steht mittig in X/U und zwischen den Achsebenen auf der Auflageebene Y/V = 0. X/U = 0 liegt in der Mitte des Verfahrwegs; negative und positive X/U-Werte sind möglich. Die Profile liegen auf den beiden Stirnflächen des Blocks.</p>
                 <p class="helper" id="block-distances" aria-live="polite">Maschinen- und Blockmaße eingeben, um die Abstände automatisch zu berechnen.</p>
-                <p class="helper">Maschinenablauf: Kontaktschalter manuell über die Pfeiltasten der Maschinensteuerung anfahren und damit den Nullpunkt setzen. Schalterposition bzw. Schalterversatz muss zum beschriebenen Koordinatensystem passen. Diese CAM-Anwendung liest keinen Schalter und steuert keine Achsen.</p>
+                <p class="helper">Maschinenablauf: Alle Maschinennullpunkte per Kontaktschalter setzen. Y/V liegen unten auf Auflagehöhe, X/U auf der positiven Seite. Das Programm beginnt dort bei Maschinenkoordinaten X0 Y0 U0 V0. Im Planungsraum liegt X/U = 0 weiterhin mittig; der Rohteilnullpunkt liegt an der unteren linken Blockecke. Diese Bezugspunkte sind getrennt. Die CAM-Anwendung liest keinen Schalter und steuert keine Achsen.</p>
+                <div class="fields">
+                    <label>Schalterlage X im Planungsraum (mm)<input name="machine_zero_x" type="number" min="0.000001" max="1000000" step="any" placeholder="Standard: +Breite/2"></label>
+                    <label>Schalterlage U im Planungsraum (mm)<input name="machine_zero_u" type="number" min="0.000001" max="1000000" step="any" placeholder="Standard: +Breite/2"></label>
+                </div>
+                <p class="helper">Leere Schalterfelder verwenden die positive Raumgrenze +Breite/2. Bei früher schaltenden Kontakten deren tatsächliche positive Lage eintragen. Y/V = 0 auf Auflagehöhe. G-Code-Koordinaten werden auf diese Maschinennullpunkte umgerechnet.</p>
                 </fieldset>
         <section class="panel preview-panel" id="vorschau">
             <div class="panel-heading preview-heading"><h2>Arbeitsraum &amp; Drahtweg</h2></div>
-            <div class="preview-toolbar"><label>Ansicht<select id="view"><option value="wire">Räumliches Drahtmodell</option><option value="xy">Achsebene XY</option><option value="uv">Achsebene UV</option></select></label><label class="check"><input type="checkbox" id="show-nominal" checked> Nennkontur anzeigen</label></div>
+            <div class="preview-toolbar"><label>Ansicht<select id="view"><option value="wire">Räumliches Drahtmodell</option><option value="xy">Seitenschnitt XY · links</option><option value="uv">Seitenschnitt UV · rechts</option></select></label><label class="check"><input type="checkbox" id="show-nominal" checked> Nennkontur anzeigen</label></div>
             <div class="workspace-import">
                 <label>Datei einfügen auf<select id="insert-side"><option value="xy">XY · linke Blockseite</option><option value="uv">UV · rechte Blockseite</option></select></label>
                 <button class="button button-muted" type="button" id="insert-profile">SVG/DXF einfügen</button>
                 <button class="button button-muted" type="button" id="center-profile">Profil im Block zentrieren</button>
             </div>
             <p class="helper">Datei wählen oder SVG/DXF direkt auf die Ansicht ziehen. Neue Dateien werden im Block zentriert. Position und Skalierung lassen sich unter „Profilimport“ ändern. Die Ansicht aktualisiert sich sofort.</p>
-            <canvas id="preview" width="1100" height="650" tabindex="0" role="img" aria-describedby="workspace-summary" aria-label="Arbeitsraum mit Block, Maßen, Profilen und Drahtweg"></canvas>
+            <canvas id="preview" width="1100" height="650" tabindex="0" role="img" aria-describedby="workspace-summary placement-feedback" aria-label="Arbeitsraum mit Block, Maßen, Profilen und Drahtweg"></canvas>
+            <p id="placement-feedback" class="helper" role="status" aria-live="polite"></p>
             <p class="helper" id="workspace-summary" aria-live="polite"></p>
         <p id="status" role="status" aria-live="polite">Maschinenparameter und Bezugspunkte festlegen, danach Profile laden.</p>
-            <div class="preview-controls"><button type="button" class="button button-muted" id="play" disabled>Abspielen</button><input id="progress" type="range" min="0" max="1" value="0" aria-label="Position auf dem Drahtweg" disabled><output id="step-label">Kein Schneidweg</output></div>
-            <p class="helper">Gelb: Block · Orange: XY · Türkis: UV · Gestrichelt: importierte Konturen / Achsbahnen · Grün: Start und Einfahrt · Violett: Ende und Ausfahrt · Weiß: aktueller Draht. Kräftige Linien zeigen den berechneten Weg an den Blockseiten. Die Wiedergabe zeigt Bewegungsschritte, keine physikalische Zeit.</p>
-            <p class="helper">Für einen Zugang außerhalb der Kontur Ein-/Ausfahrt aktivieren und die Zugangspunkte eintragen. Nach „Schneidweg berechnen“ ist der gesamte geplante Weg einschließlich dieser Verbindungen sichtbar. Ohne Ein-/Ausfahrt beginnt der Schnitt auf der Kontur; die manuelle Anfahrt ist kein berechneter Weg.</p>
+            <div class="preview-controls"><button type="button" class="button button-muted" id="play" disabled>Abspielen</button><input id="progress" type="range" min="0" max="1" step="any" value="0" aria-label="Position im geprüften Bewegungsprogramm" disabled><output id="step-label">Kein Schneidweg</output><label>G1-Wiedergabe<select id="playback-speed"><option value="1">1×</option><option value="10" selected>10×</option><option value="50">50×</option></select></label></div>
+            <p id="program-state" class="helper" role="status" aria-live="polite">Noch kein geprüftes Bewegungsprogramm.</p>
+            <p class="helper">Gelb: Block · Orange: XY · Türkis: UV · Grün: Einfahrt · Violett: Ausfahrt. Der bewegte Draht ist Orange bei angeforderter Heizleistung, Blau bei ausgeschalteter Leistung. Die Wiedergabe liest die ausgegebenen G0/G1- und M3/M5-Sätze zurück. G1 wird entlang jedes Satzes mit dem ausgegebenen F interpoliert, einschließlich Ein-/Ausfahrt. G0 ist schematisch mit 1 s je Satz dargestellt; die echte Eilganggeschwindigkeit ist unbekannt. Keine Beschleunigungs- oder Thermiksimulation.</p>
+            <p class="helper">Im Seitenschnitt das Profil ziehen oder bei fokussierter Ansicht mit Pfeiltasten verschieben (1 mm, mit Umschalt 10 mm). Beide Dateizentren bleiben gekoppelt. Rot markiert ungültige Positionen, Grün eine erfolgreiche Geometrieprüfung. Der vollständige heiße Weg mit Ein-/Ausfahrt erscheint nach automatischer Prüfung; Blau gestrichelt zeigt die Kaltanfahrt.</p>
             <p id="coordinates" class="helper"></p><ul id="warnings"></ul>
         </section>
                 <fieldset><legend>Schneidparameter</legend><div class="fields">
@@ -164,8 +172,10 @@
                     <label>Mindestanzahl Liniensequenzen<input name="segments" type="number" value="200" min="4" max="2000" step="1" required></label>
                 </div><p class="helper">Korrespondierende Ecken werden gleichzeitig erreicht. Start/Ende, Laufrichtung und echte Eckfolgen müssen zusammenpassen. SVG-Kreise und SVG-Kurven dürfen unterschiedlich viele Stützpunkte haben; bei DXF zählen nichtkollineare Stützpunkte weiterhin als Ecken. Die endgültige Segmentanzahl berücksichtigt Eckpaare und Kurvenauflösung. Abbrand wird erst nach dem vollständigen Nennprogramm auf die Drahtbahn angewendet. Die Leistung wird linear auf den S-Bereich des Stromreglers abgebildet.</p></fieldset>
                 <fieldset><legend>Werkzeug: Ein- und Ausfahrt / Löcher</legend>
-                    <label class="check"><input type="checkbox" name="access" id="access"> Geradlinige Ein- und Ausfahrt aktivieren</label>
-                    <p class="helper">Koordinaten in den beiden Bauteil-Profilebenen. Für ein Loch: Innenkontur wählen, Draht am Zugangspunkt einfädeln oder einen Zugangsschlitz vorsehen. Die Verbindung zur Kontur schneidet mit; Zugänglichkeit selbst prüfen.</p>
+                    <label class="check"><input type="checkbox" name="auto_access" id="auto-access" checked> Eintritt und Austritt am Blockrand automatisch bestimmen</label>
+                    <p class="helper">Wählt kurze gerade Zugänge von oben oder seitlich zum eingestellten Konturstart/-ende, ohne das Bauteil vorzeitig zu durchqueren. Die aufliegende Unterseite ist gesperrt. Kontur und Abbrand müssen in den Block passen. G0 fährt mit ausgeschalteter Heizung zum Einschaltpunkt 10 mm außerhalb der Eintrittsfläche; nach M3/S fährt G1 diese Luftstrecke mit Schnittvorschub zur Rohteilkante und anschließend ins Material. Der nötige Freiraum wird geprüft. Für Innenkonturen manuelle Zugangspunkte verwenden.</p>
+                    <label class="check"><input type="checkbox" name="access" id="access"> Manuelle geradlinige Ein- und Ausfahrt verwenden</label>
+                    <p class="helper">Koordinaten im Planungsraum an den beiden Blockstirnflächen. Für einen Export muss der manuelle Startpunkt von außen erreichbar sein; bei weniger als 10 mm Abstand wird davor ein Heizvorlauf ergänzt. Weiter außen liegende Startpunkte bleiben erhalten und schalten entsprechend früher ein. Innere Einfädelpunkte allein ermöglichen keine Kaltanfahrt. Ein-/Austritt unten ist gesperrt. Die Verbindung zur Kontur schneidet mit; Zugänglichkeit selbst prüfen.</p>
                     <div id="access-fields" class="fields">
                     {% for phase, title in [('entry', 'Einfahrt'), ('exit', 'Ausfahrt')] %}
                         {% for axis in ['x','y','u','v'] %}
@@ -176,8 +186,8 @@
                 </fieldset>
                 <fieldset><legend>G-Code und Stromregler</legend><div class="fields">
                     <label>S-Wert bei 100 % Leistung<input name="s_max" id="s-max" type="number" min="0.001" max="1000000000" step="any"></label>
-                </div><label class="check"><input type="checkbox" name="controller_confirmed" id="controller-confirmed"> Ich habe geprüft, dass meine Steuerung XYUV sowie G21/G90/G94 unterstützt und dass M3/S die Heizleistung vorgibt und M5 die Heizung ausschaltet.</label>
-                <p class="helper">Ohne diese Angaben ist die Vorschau verfügbar. Der Export setzt voraus, dass die Startposition bei ausgeschaltetem Draht manuell angefahren wird. Er enthält keine Referenzfahrt und keine automatische Anfahrt.</p></fieldset>
+                </div><label class="check"><input type="checkbox" name="controller_confirmed" id="controller-confirmed"> Ich habe geprüft, dass meine Steuerung XYUV sowie G0/G1 und G21/G90/G94 unterstützt und dass M3/S die Heizleistung vorgibt und M5 die Heizung ausschaltet.</label>
+                <p class="helper">Jeder Export startet am per Kontaktschalter gesetzten Maschinennullpunkt. M5/G0 führen zum Einschaltpunkt mindestens 10 mm vor Materialeintritt. Danach M3/S und G1 mit Schnittvorschub für Heizvorlauf und Materialschnitt. Es wird keine zusätzliche Aufheizpause eingefügt. Ohne Platz für die Anfahrt bleibt der Export gesperrt; die geometrische Vorschau bleibt verfügbar. Keine Referenzfahrt.</p></fieldset>
             </section>
             <section class="workflow" id="profilimport">
             {% for name, title in [('xy', 'XY · linkes Profil'), ('uv', 'UV · rechtes Profil')] %}
@@ -185,7 +195,7 @@
                     <div class="panel-heading"><div class="step-number">03</div><h2>{{ title }}</h2></div>
                     {% if name == 'xy' %}
                     <label class="check"><input type="checkbox" id="same-profile" aria-describedby="same-profile-help"> Dieses Profil für beide Seiten verwenden</label>
-                    <p class="helper" id="same-profile-help">Datei und Konturauswahl für UV übernehmen. Position, Skalierung, Start/Ende und Laufrichtung bleiben je Seite einstellbar.</p>
+                    <p class="helper" id="same-profile-help">Datei und Konturauswahl für UV übernehmen. Die Dateizentren bleiben auch bei unterschiedlichen Skalierungen gekoppelt; Start/Ende und Laufrichtung sind je Seite einstellbar.</p>
                     {% endif %}
                     <label class="file-field">Eigene SVG- oder DXF-Datei<input type="file" id="file-{{ name }}" accept=".svg,.dxf"></label>
                     <label>Einheitenlose DXF: mm pro Einheit<input id="unit-{{ name }}" type="number" value="1" min="0.0001" max="10000" step="any"></label>
@@ -203,7 +213,7 @@
                 </article>
             {% endfor %}
             </section>
-            <p class="helper">Position = untere linke Ecke der gesamten Datei. Geschlossene Konturen beginnen am importierten Anfang und laufen gegen den Uhrzeigersinn. Start/Ende sind Weganteile nach Richtungswahl; gleiche Werte ergeben eine volle Runde. Ein Auftrag bearbeitet ein gewähltes Konturpaar; Innenkonturen separat planen.</p>
+            <p class="helper">Position = untere linke Ecke der gesamten Datei. Positions- und Skalierungsänderungen führen die andere Seite mit, sodass die Mittelpunkte der Dateiausdehnungen übereinstimmen. Geschlossene Konturen beginnen am importierten Anfang und laufen gegen den Uhrzeigersinn. Start/Ende sind Weganteile nach Richtungswahl; gleiche Werte ergeben eine volle Runde. Ein Auftrag bearbeitet ein gewähltes Konturpaar; Innenkonturen separat planen.</p>
             <button class="button button-primary" id="calculate" type="submit">Schneidweg berechnen</button>
         </form>
         <section class="panel settings-panel" id="gcode">

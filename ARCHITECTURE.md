@@ -17,10 +17,12 @@ gehalten und für jede Berechnung erneut gesendet.
 | `app.py` | Flask-App: `GET /`, `POST /api/import`, `POST /api/plan`, Eingabefehler als JSON |
 | `profiles.py` | Vektorimport mit ezdxf/svgelements; Kurvenannäherung und Einheiten |
 | `cam.py` | Konturen, gemeinsame Liniensequenzen, Abbrand, Projektion, Raumprüfung, G-Code |
+| `nc_program.py` | Eigenen G-Code rücklesen, Modal-/Heizstatus prüfen, ausgegebene Bahn mit Planung vergleichen |
 | `version.py` | Enthält `__version__` als zentrale Versionsnummer |
 | `templates/index.html` | Deutschsprachiges Auftragsformular und Vorschau-/Exportbereich |
 | `static/css/style.css` | Gestaltung und responsive Darstellung |
 | `static/js/cam.js` | Imports, Formularzustand, Aufbereitung der Live-Szene, Animation, `.nc`-Download |
+| `static/js/program.js` | Zwischenposition und Wiedergabe aus rückgelesenen G0/G1-Sätzen, F und Heizstatus |
 | `static/js/workspace.js` | Canvas-Zeichnung von Arbeitsraum, Block, Bemaßung, Konturentwurf und berechneten Bahnen |
 | `requirements.txt` | Flask, ezdxf, svgelements und Shapely; Versionsbereiche in der Datei |
 | `tests/` | Import-, Planungs- und API-Tests sowie optionaler Edge-/Chrome-Browsertest |
@@ -77,7 +79,12 @@ auf dem Zielsystem zu prüfen. Siehe [Installationsanleitung](INSTALLATION_DEBIA
 
 Die Checkbox bei der XY-Eingabe verwendet im Browser dieselben importierten Daten
 und dieselbe Konturauswahl für beide Seiten. UV-Import, Einheitenfaktor und
-Konturauswahl sind währenddessen gesperrt; die übrigen UV-Felder bleiben unabhängig.
+Konturauswahl sind währenddessen gesperrt; Start/Ende und Richtung bleiben unabhängig.
+Der Browser koppelt die Mittelpunkte der skalierten gesamten Dateiausdehnungen:
+`Zentrum = Position + skalierte Ausdehnung / 2`. Bei Positions-/Skalierungsänderung
+einer Seite wird die andere Positionsangabe entsprechend nachgeführt. Dies gilt
+auch für verschiedene Dateien, Import, Zentrierung und Umschalten der Übernahme.
+Die API erhält weiterhin explizite Koordinaten und erzwingt diese UI-Kopplung nicht.
 Ein separates UV-Profil samt Konturauswahl bleibt zum Wiederherstellen erhalten.
 XY-Neuimporte und Konturwechsel aktualisieren die Übernahme; ein ungültiger oder
 laufender XY-Import verhindert die Planung auch für UV. Die Planungsanfrage enthält
@@ -116,7 +123,42 @@ Eckerkennung an allen nichtkollinearen Stützpunkten. SVG-Dateien müssen nach
 dem Update erneut importiert werden; reine Linienpolygone besitzen keine
 Informationen über ursprüngliche Kurven.
 Die Antwort enthält die nominelle Achsbahn `nominal`, korrigierte Achsbahn `path`,
-Punkte in den Profilebenen `sections`, Start/Ende, Raummaße, Blockmaße (`block`), Hinweise und optional `gcode`.
+Punkte in den Profilebenen `sections`, Start/Ende, Raummaße, Blockmaße (`block`),
+Hinweise und optional `gcode`. `auto_access: true` aktiviert die automatische
+Randzugangssuche, `access: true` weiterhin manuelle Zugangspunkte; beide zusammen
+oder automatische Innenkonturzugänge werden abgewiesen. Ohne diese Flags bleibt
+die Kontur ohne zusätzliche heiße Zugänge. Die Oberfläche aktiviert `auto_access`
+standardmäßig. `access_enabled` kennzeichnet die heißen Zugangssegmente in der
+Antwort. `approach` enthält die kalten XYUV-Achspositionen im Planungsraum vom
+Maschinennullpunkt zum Einschaltpunkt oder `null`; sie sind getrennt von
+`path`/`sections`. `approach_error` enthält
+eine fehlende freie Anfahrt/Ausfahrt als Exporthindernis, ohne die geometrische
+Schnittvorschau zu verwerfen. `start`/`end` bezeichnen weiterhin den
+Materialweg ab Zugang beziehungsweise bis Austritt, nicht den M3-Einschaltpunkt.
+`heating_start` ist dieser Einschaltpunkt als XYUV-Achsposition im Planungsraum.
+`heat_lead` enthält bei zusätzlichem Vorlauf `[heating_start, start]`, sonst
+`null`. `heat_lead_mm: 10` ist der geforderte Mindestabstand zum Rohteil;
+bei schon außen liegenden manuellen Zugängen kann der ergänzte Weg kürzer sein
+oder entfallen. `path`, `sections` und `machine_path` behalten den Materialweg;
+`program` enthält zusätzlich den tatsächlich ausgegebenen äußeren Vorlauf.
+`machine_zero_x` und `machine_zero_u` sind optional, positiv und höchstens
+`width/2`; ohne Angabe gilt `width/2`. Y/V-Schalter liegen fest bei 0. Die Antwort
+enthält `machine_zero` und den getrennten `raw_origin` (untere linke Blockecke)
+im Planungsraum. `machine_path` enthält `path` minus `machine_zero`, also die
+Maschinenkoordinaten für den Materialweg. Änderungen der
+Schalterlage verschieben keine Profile und keinen Rohteil.
+`program` enthält die geprüfte Rücklesung des ausgegebenen Textes: je Bewegung
+`from`/`to` in Maschinenkoordinaten, `command`, `heater_on` (M3-Anforderung),
+`power_s`, `feed`, vierdimensionale `length`, `duration_seconds` (nur G1),
+`line`/`text` der tatsächlichen Codezeile und `phase`
+(Anfahrt/Heizvorlauf/Ein-/Ausfahrt/Kontur).
+Positionswerte entsprechen der ausgegebenen Rundung auf fünf Nachkommastellen.
+`source: export` kennzeichnet genau den Downloadtext. Ohne bestätigten S-Bereich
+wird derselbe Postprozessor intern mit M3 ohne S verwendet und als
+`source: preview` geprüft. Dieser Text wird nicht als Export bereitgestellt;
+es wird kein Hardware-S-Wert erfunden. `power_percent` bleibt die angeforderte
+Leistung. Bei fehlender freier Anfahrt/Ausfahrt ist `program: null` und die
+geometrische Vorschau bleibt ohne Programmwiedergabe erhalten.
 Seit 0.2.0 sind `block_width`, `block_height` und `block_span` Pflichtfelder.
 Manuelle Eingaben `z_xy`/`z_uv` werden nicht mehr ausgewertet; diese Werte werden
 nur noch als berechnete Profilebenen in `room` zurückgegeben.
@@ -169,16 +211,70 @@ nur noch als berechnete Profilebenen in `room` zurückgegeben.
    bleiben. X/U reicht von `−width/2` bis `+width/2`, Y/V von 0 bis `height`.
    Alle importierten Nennkonturen müssen in die Blockstirnflächen passen;
    die Achsprojektion wird für das ausgewählte Konturpaar geprüft.
-   Abbrandwege und Zugangspunkte dürfen außerhalb des Blocks liegen, müssen aber
-   einschließlich Achsprojektion innerhalb des Maschinenraums bleiben.
+   Bei manuellen Zugängen oder deaktivierter Automatik dürfen Abbrandwege und
+   Zugangspunkte außerhalb des Blocks liegen, müssen aber einschließlich
+   Achsprojektion innerhalb des Maschinenraums bleiben. Bei automatischem Zugang
+   muss auch die vollständige korrigierte Kontur in die Blockstirnflächen passen;
+   die geraden Zugänge zwischen Rand und Kontur bleiben dadurch ebenfalls im Block.
 5. Nominelle und korrigierte vollständige Profile und tatsächliche Teilschnitte
    werden an 21 Positionen zwischen den Profilebenen auf Überschneidung/Kollaps geprüft.
    Eine konische Form ist zulässig; auf einen Punkt kollabierte Profile sind es nicht.
 
 Ein Auftrag bearbeitet genau ein Konturpaar. Löcher werden durch explizite Wahl
 einer Innenkontur mit Ein-/Ausfahrt bearbeitet. Automatische Lochzuordnung,
-Auftragsverkettung und Zugangssuche sind nicht implementiert. Ein-/Ausfahrt bleibt
+Auftragsverkettung sind nicht implementiert. Manuelle Ein-/Ausfahrt bleibt
 bei der Abbrandkorrektur am benutzerdefinierten Zugangspunkt verankert.
+
+Der automatische Zugang erhält die korrespondierenden Konturstarts/-enden.
+Er sucht je Ein- und Ausfahrt einen gemeinsamen Punkt beider Blockstirnflächen:
+auf Oberkante und beiden Seiten werden die Projektionen der vier nominellen/korrigierten
+Endpunkte, deren Mittelwert und die oberen Kantenecken als Kandidaten geprüft.
+Unterkante und beide unteren Ecken sind gesperrt, weil der Block direkt aufliegt.
+Dies gilt auch für ausdrücklich manuelle Ein-/Austrittspunkte an der Unterkante. Die
+Summe der vier geraden Zugangslängen bestimmt den günstigsten gültigen Kandidaten;
+dies ist keine globale Optimierung von Konturstart oder Materialausnutzung.
+Nenn- und Abbrandzugänge werden an denselben 21 Zwischenquerschnitten gegen
+die jeweils vollständige Kontur geprüft. Bei geschlossenen Konturen darf die
+Gerade das um 1e-7 mm verkleinerte Polygon nicht berühren; Randberührung ist erlaubt.
+Bei offenen Konturen werden die letzten 1e-6 mm des Zugangs für den erlaubten
+Endpunktkontakt ausgenommen. Ohne gültigen Kandidaten erfolgt ein Fehler mit
+Hinweis auf Start-/Endänderung oder manuelle Zugänge. Innenkonturen bleiben manuell.
+
+Für Eintrittskandidaten prüft die Automatik zusätzlich eine freie Kaltanfahrt
+mit 10 mm Heizvorlauf. Sie bevorzugt unter den gültigen Kandidaten die mit
+ausreichendem Verfahrraum; ohne geeigneten Heizpunkt bleibt eine geometrische
+Zugangsvariante als Entwurf sichtbar, Export und Programmwiedergabe sind gesperrt.
+`heating_approach()` versetzt den gemeinsamen Randpunkt auf beiden Seiten um
+genau 10 mm normal nach außen: links/rechts in X/U, oben in Y/V. Das ist eine
+räumliche Strecke je Blockseite, keine 10-mm-Länge des vierdimensionalen
+Achsvektors. Bei einem bereits außen liegenden manuellen Zugang wird nur der
+fehlende Abstand bis mindestens 10 mm ergänzt; größere Abstände bleiben bestehen.
+Alle Achspunkte müssen im Schneidraum liegen. Der anschließende G1-Vorlauf
+erfolgt in Luft bis zum Zugang und wird getrennt vom Materialweg geführt.
+
+Die Kaltanfahrt beginnt im Planungsraum bei `machine_zero`, standardmäßig
+`[width/2,0,width/2,0]`. Dieser Punkt entspricht im Export den per Kontaktschalter
+gesetzten Maschinenkoordinaten `[0,0,0,0]`; er ist weder Rohteilnullpunkt noch
+Konturstart. Der Rohteil bleibt mittig mit Unterseite bei Y/V = 0.
+
+`cold_approach()` sucht einen Weg im Graphen aus Maschinenstart, Einschaltpunkt,
+bei Heizvorlauf um 10 mm nach außen versetzten oberen Blockecken und beiden
+oberen Raumecken. Außerhalb des Raums liegende Hilfsknoten entfallen. Dijkstra minimiert die
+Summe der vierdimensionalen Achsweglängen. Eine Teilbewegung ist nur zulässig,
+wenn ihre gesamte X/Y/U/V-Koordinatenhülle links, rechts oder oberhalb des Blocks
+liegt. Die konservative Prüfung umfasst auch zeitlich unabhängig schnellfahrende
+Achsen; ein gerader, koordinierter G0-Verlauf wird nicht vorausgesetzt. Eine
+Anfahrt zur gegenüberliegenden Seite führt dadurch über den Block statt unter
+ihm hindurch. Alle Knoten bleiben im Maschinenraum. Eine positive Schalterlage
+innerhalb des aufliegenden Rohteils führt zur Exportsperre. Auch der heiße
+Endpunkt muss außerhalb seitlich oder oben liegen; es wird keine zusätzliche
+Rückfahrt exportiert. Diese Prüfung gilt für automatische und manuelle Zugänge.
+Ein innerer Einfädelpunkt ohne von außen erreichbaren Zugang liefert weiterhin
+eine geometrische Schnittvorschau, aber keinen Export ab Maschinennullpunkt.
+
+Außenkanten dürfen berührt werden; Drahtdicke, Spannmittel und Hindernisse im
+Außenraum sind nicht modelliert. Der aufliegende Block wird berücksichtigt,
+eine zusätzliche Sicherheitszugabe wird ohne Hardwaredaten nicht erfunden.
 
 Die Prüfung von 21 Querschnitten ist eine Stichprobe, kein vollständiger Nachweis
 der Schneidbarkeit. Thermik, Drahtdurchhang, lokale Schnittgeschwindigkeit,
@@ -187,10 +283,10 @@ Der Abbrandradius gilt konstant in beiden Profilebenen. Er ist ein Mess-/Erfahru
 
 ## G-Code und Vorschau
 
-Der vorgesehene Maschinenablauf sieht das manuelle Anfahren eines Kontaktschalters
-per Pfeiltasten der Maschinensteuerung vor. Die Nullpunktzuordnung über Schalterlage
-oder Schalterversatz muss X/U mittig und Y/V auf der Auflageebene ergeben.
-Die CAM-Anwendung übernimmt dieses Koordinatensystem in Planung und G-Code;
+Der Maschinenablauf setzt alle Maschinennullpunkte per Kontaktschalter: X/U auf
+der positiven Seite, Y/V unten auf Auflagehöhe. Die Vorschau verwendet weiterhin
+den mittigen Planungsraum, der G-Code wird in die Schalterkoordinaten umgerechnet.
+Maschinen- und Rohteilnullpunkt sind getrennt gekennzeichnet;
 Schalterauswertung, Tastatur-Jogging und Maschinenanbindung sind nicht implementiert.
 Die Canvas-Vorschau zeigt Blockstirnflächen und die
 X/U-Mittellinie; das statische Maschinenmodell bleibt illustrativ.
@@ -204,7 +300,19 @@ Dateiecke, skaliert und verschiebt sie für die unverbindliche Sofortanzeige.
 Alle Konturen bleiben sichtbar, die gewählte wird stärker gezeichnet. Die
 Orientierung und Start-/Endanteile des Schnitts stammen erst aus der Berechnung.
 Außerhalb des Blocks liegende Nennkonturen erhalten einen Hinweis; diese
-Anzeige ersetzt die serverseitige Prüfung nicht.
+Anzeige ersetzt die serverseitige Prüfung nicht. Pointer-Ereignisse in XY/UV
+verschieben die gekoppelten Profile. Die Canvas-Abbildung bleibt während des
+Ziehens konstant, damit eine außerhalb liegende Kontur keine Sprünge durch
+automatische Neuskalierung auslöst. Pointer Capture beendet die Geste auch
+außerhalb der Ansicht; Pfeiltasten bieten 1-mm-, mit Umschalt 10-mm-Schritte.
+
+Nach 250 ms Eingabepause ruft `cam.js` automatisch dieselbe Planungs-API wie der
+Berechnungsknopf auf. Blocküberschreitungen werden sofort rot dargestellt;
+während der Serverprüfung bleibt die Platzierung ungeprüft. Erfolg zeigt grünes
+Feedback und die vollständige Bahn, Fehler zeigen den Serverhinweis. Fehlende
+Pflichtangaben zählen nicht als erfolgreiche Prüfung. Änderungen brechen laufende
+Live-Anfragen ab; zusätzlich verhindert der Revisionszähler die Übernahme alter
+Antworten, auch wenn ein Request nicht mehr abgebrochen werden kann.
 
 Dateiauswahl neben der Ansicht und Drag-and-drop nutzen dieselbe Import-API wie
 die Dateifelder. Gültige Blockhöhe und Skalierung erlauben die Zentrierung der
@@ -214,11 +322,16 @@ Abwählen der XY-Profilübernahme.
 Nach Berechnung zeichnet `workspace.js` die tatsächlichen `sections` an den
 Blockstirnflächen, die Achsbahnen aus `path` dünn an den Drahtführungen und
 optional `nominal` gestrichelt. Aktivierte Zugänge sind der erste und letzte
-Abschnitt von `sections`; Farbe und Pfeile zeigen Ein-/Ausfahrt. Der Regler
-steuert die weiße Drahtlinie aus `path`. Bei Änderungen verschwindet die geprüfte
-Bahn sofort, während Block und Konturentwurf erhalten bleiben. Ansichtswechsel
-und Reglerbewegungen verwerfen das Ergebnis nicht. Es gibt keine zusätzliche
-Anfahrt vom Maschinen-Nullpunkt; der Export beginnt wie bisher an `start`.
+Abschnitt von `sections`; Farbe und Pfeile zeigen Ein-/Ausfahrt. Regler und
+Animation bewegen den Draht ausschließlich aus `program`, einschließlich G0.
+`programPosition()` rechnet die rückgelesene Maschinenposition zurück in den
+Planungsraum und projiziert den Draht auf beide Blockstirnflächen. Der aktuelle
+Draht ist bei angeforderter Heizleistung orange, bei ausgeschalteter Leistung
+blau; M3 mit S0 wird als Leistung 0 angezeigt. Die Zustandszeile nennt Phase,
+G-Code-Zeile, G0/G1, F und M3/M5. Die Farbe ist keine Temperaturmessung.
+Bei Änderungen verschwindet die geprüfte Bahn sofort, während Block und
+Konturentwurf erhalten bleiben. Ansichtswechsel und Reglerbewegungen verwerfen
+das Ergebnis nicht. Nach gültigen Änderungen entsteht der neue Weg automatisch.
 
 Die Maschinenparameter enthalten ein statisches SVG-Maschinenmodell in räumlicher
 Projektion. Zwei Führungssäulen mit Schlitten und parallelen Grundschienen,
@@ -240,13 +353,40 @@ entlang des vierdimensionalen Achsvektors definiert. Die Firmware muss diese
 Interpretation unterstützen. `S = Leistung / 100 × s_max` nimmt eine lineare
 Zuordnung zum Stromregler an; eine Stromregelung wird hier nicht implementiert.
 Es gibt bewusst keinen erfundenen S-Maximalwert. Die Oberfläche benötigt ihn und
-die Bestätigung des Steuerungsprofils für den Export. Die Startkoordinaten stehen
-als Kommentar im Programm und numerisch in der Vorschau: manuell mit ausgeschaltetem
-Draht anfahren, bevor der Export ausgeführt wird. Es gibt keine automatische Anfahrt.
+die Bestätigung des Steuerungsprofils einschließlich G0/G1 für den Export.
+Jeder Export beginnt bei Maschinenkoordinaten X0/Y0/U0/V0 am zuvor per Schalter
+gesetzten Nullpunkt. Nach G21/G90/G94 und M5 folgen G0-Sätze ohne F zum
+Einschaltpunkt mindestens 10 mm außerhalb des Rohteils. Dort M3/S, anschließend
+ein zusätzlicher G1-Satz mit F zur Eintrittskante, dann die Materialbahn bis
+zur Ausfahrt und M5/M2. Eine zusätzliche Aufheizpause wird nicht erfunden;
+die Vorlaufzeit ergibt sich aus der Strecke und dem ausgegebenen F.
+G0 verwendet den Eilgang der Steuerung; der eingestellte Schneidvorschub begrenzt
+ihn nicht. Alle absoluten Positionen werden vor Ausgabe um `machine_zero` versetzt.
+Es gibt kein G92 oder anderes Setzen eines Nullpunkts am Rohteil. Ohne freie
+Kaltanfahrt oder freien Austritt wird kein G-Code erzeugt. Eine Referenzfahrt
+ist nicht implementiert.
+
+Nach dem Schreiben liest `nc_program.read_program()` den tatsächlichen Text
+zurück. Unterstützt ist ausschließlich der eigene Dialekt G21/G90/G94,
+G0/G1 mit vollständigen XYUV-Achsen, F bei G1 und M3/S, M5, M2. Unbekannte
+Befehle, nicht endliche Zahlen, doppelte Parameter, G0 bei M3, G1 ohne M3 oder
+ein Programmende ohne M5 werden abgewiesen. `verify_program()` vergleicht
+Bewegungsanzahl, G0/G1, alle Zielpositionen, F und S mit der freigegebenen
+Planung (5,01e-6 Rundungstoleranz) und prüft den lückenlosen Übergang von G0
+zum Heizvorlauf sowie dessen G1-Ziel am ursprünglichen Zugangspunkt. Die
+eigentliche Materialeinfahrt bleibt eine eigene Phase. Die Rückprüfung erfolgt vor Export und API-Antwort.
+Ein fehlerhafter Postprozessor liefert einen Eingabefehler statt eines Downloads.
+Das ist eine Prüfung des eigenen Dialekts, kein allgemeiner Firmwareinterpreter.
 
 Canvas zeigt beide Achsbahnen und die Drahtverbindungen in fester räumlicher
-Projektion oder als XY-/UV-Ansicht. Der Schieberegler und die Wiedergabe laufen
-durch die Bewegungsblöcke, ohne physikalische Zeitdarstellung. Die Nennbahn lässt
+Projektion oder als XY-/UV-Ansicht. `advanceProgramCursor()` integriert G1 ideal
+mit `Zeit = 60 × XYUV-Weglänge / ausgegebenem F` in Sekunden und interpoliert
+auch innerhalb eines einzigen langen Ein-/Ausfahrtsatzes. Wiedergabe 1×, 10×
+(Standard) oder 50× verändert nur die Anzeige. Für G0 ist mangels realem Eilgang
+eine ausdrücklich schematische Sekunde je nicht leerem Satz vorgesehen.
+Nullbewegungen benötigen keine Anzeigezeit. Pause, Scrubbing und verborgene
+Browserseiten unterbrechen die Wiedergabe ohne konkurrierende Animationsschleifen.
+Beschleunigung, Aufheizung und Thermik bleiben unmodelliert. Die Nennbahn lässt
 sich zusätzlich anzeigen. Änderungen verwerfen Vorschau und Export; veraltete
 asynchrone Antworten dürfen keine aktuellen Ergebnisse überschreiben.
 

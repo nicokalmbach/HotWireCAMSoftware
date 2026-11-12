@@ -6,8 +6,9 @@ import unittest
 import ezdxf
 
 from app import app
-from cam import plan, synchronize, check_room, prepared, corrected
+from cam import plan, synchronize, check_room, prepared, corrected, cold_approach
 from profiles import CamError, import_profile
+from shapely.geometry import LineString, Polygon
 
 
 def rectangle(w=100, h=70):
@@ -16,11 +17,17 @@ def rectangle(w=100, h=70):
 
 def job(**changes):
     data = dict(xy={'contours': [rectangle()]}, uv={'contours': [rectangle(60)]},
-                width=400, height=300, span=600, block_width=400, block_height=300, block_span=400,
+                width=400, height=300, span=600, block_width=350, block_height=300, block_span=400,
                 xy_x=60, xy_y=60, uv_x=70, uv_y=60, feed=100, power=30,
                 burn_radius=.5, segments=40, mode='outer')
     data.update(changes)
     return data
+
+
+def outside_access():
+    """Manueller Schnittstart oben rechts außerhalb des Bauteils (Testdaten)."""
+    return dict(access=True, entry_x=200, entry_y=300, entry_u=200, entry_v=300,
+                exit_x=200, exit_y=300, exit_u=200, exit_v=300)
 
 
 class ImportTests(unittest.TestCase):
@@ -46,12 +53,11 @@ class ImportTests(unittest.TestCase):
                         mode=mode, burn_radius=.5, controller_confirmed=True, s_max=1000,
                         xy_start=75 if partial else 0, xy_end=25 if partial else 100,
                         uv_start=75 if partial else 0, uv_end=25 if partial else 100,
-                        access=mode == 'inner', entry_x=0, entry_y=150, entry_u=0, entry_v=150,
-                        exit_x=0, exit_y=150, exit_u=0, exit_v=150))
+                        **outside_access()))
                     self.assertIn('G1 ', result['gcode'])
                     self.assertGreater(result['segments'], 40)
                     # Kreisform auch bei nur vier angeforderten Segmenten erhalten.
-                    section_points = result['sections'][1:-1] if mode == 'inner' else result['sections']
+                    section_points = result['sections'][1:-1]
                     radius_delta = {'center': 0, 'outer': .5, 'inner': -.5}[mode]
                     for p in section_points:
                         self.assertAlmostEqual(math.hypot(p[0], p[1]-150), 50+radius_delta, delta=.04)
@@ -157,6 +163,132 @@ class ImportTests(unittest.TestCase):
 
 
 class PlanTests(unittest.TestCase):
+    def test_cold_approach_to_opposite_side_goes_over_stock(self):
+        origin = [200,0,200,0]
+        target = [-150,40,-150,40]
+        route = cold_approach(origin,target,300,200,400,300)
+        self.assertEqual(route[0],origin)
+        self.assertEqual(route[-1],target)
+        self.assertGreaterEqual(max(p[1] for p in route),200)
+        stock_interior = Polygon([[-150,0],[150,0],[150,200],[-150,200]]).buffer(-1e-7)
+        for a,b in zip(route,route[1:]):
+            self.assertFalse(LineString([a[:2],b[:2]]).intersects(stock_interior))
+            self.assertFalse(a[1] == b[1] == 0)
+
+    def test_machine_and_raw_origins_and_gcode_coordinates(self):
+        result = plan(job(auto_access=True,block_width=300,controller_confirmed=True,s_max=1000,
+                          machine_zero_x=180,machine_zero_u=190,xy_x=-50,uv_x=-30))
+        self.assertEqual(result['machine_zero'],[180,0,190,0])
+        self.assertEqual(result['raw_origin'],[-150,0,-150,0])
+        self.assertEqual(result['approach'][0],result['machine_zero'])
+        for world,machine in zip(result['path'],result['machine_path']):
+            self.assertEqual(machine,[world[0]-180,world[1],world[2]-190,world[3]])
+        for row,point in zip([r for r in result['gcode'].splitlines() if r.startswith('G1 ')][1:], result['machine_path'][1:]):
+            self.assertTrue(all(f'{axis}{v:.5f}' in row for axis,v in zip('XYUV',point)))
+
+    def test_machine_zero_in_stock_blocks_rapid_export(self):
+        result = plan(job(auto_access=True,block_width=300,machine_zero_x=120,
+                          machine_zero_u=120,controller_confirmed=True,s_max=1000,xy_x=-50,uv_x=-30))
+        self.assertIsNone(result['approach'])
+        self.assertIsNone(result['gcode'])
+        self.assertIn('Maschinennullpunkt',result['approach_error'])
+        self.assertTrue(result['sections'])
+        for changes in (dict(machine_zero_x=0),dict(machine_zero_u=-1),dict(machine_zero_x=201)):
+            with self.subTest(changes=changes),self.assertRaises(CamError):
+                plan(job(**changes))
+
+    def test_manual_bottom_entry_and_exit_are_rejected(self):
+        for phase in ('entry','exit'):
+            data=outside_access()
+            data.update({phase+'_x':0,phase+'_y':0,phase+'_u':0,phase+'_v':0})
+            with self.subTest(phase=phase),self.assertRaisesRegex(CamError,'Unterseite'):
+                plan(job(**data))
+
+    def test_internal_manual_start_or_exit_has_no_export(self):
+        for phase in ('entry','exit'):
+            data=outside_access()
+            data.update({phase+'_x':80,phase+'_y':80,phase+'_u':90,phase+'_v':80})
+            result=plan(job(controller_confirmed=True,s_max=1000,**data))
+            self.assertIsNone(result['gcode'])
+            self.assertIsNotNone(result['approach_error'])
+
+    def test_auto_access_complete_path_and_cold_gcode(self):
+        data = job(auto_access=True, controller_confirmed=True, s_max=2000)
+        result = plan(data)
+        self.assertTrue(result['access_enabled'])
+        self.assertEqual(result['approach'][0], [200, 0, 200, 0])
+        self.assertNotEqual(result['machine_zero'], result['raw_origin'])
+        self.assertEqual(result['approach'][-1], result['heating_start'])
+        self.assertNotEqual(result['heating_start'], result['start'])
+        self.assertEqual(result['start'], result['end'])
+        # Vollständige heiße Bahn bleibt auf beiden Blockstirnflächen im Block.
+        check_room(result['sections'], data['block_width'], data['block_height'])
+        for endpoint in (result['sections'][0], result['sections'][-1]):
+            for x,y in (endpoint[:2], endpoint[2:]):
+                self.assertTrue(y > 0 and (abs(x) == data['block_width']/2 or y == data['block_height']))
+        code = result['gcode'].splitlines()
+        heat_on = next(i for i,line in enumerate(code) if line.startswith('M3 '))
+        cold_moves = [line for line in code[:heat_on] if line.startswith('G0 ')]
+        self.assertEqual(len(cold_moves), len(result['approach'])-1)
+        self.assertFalse(any(line.startswith('G1 ') for line in code[:heat_on]))
+        self.assertTrue(all(' F' not in line for line in cold_moves))
+        self.assertIn('; Start: X0.00000 Y0.00000 U0.00000 V0.00000',code)
+        self.assertEqual(len([line for line in code[heat_on:] if line.startswith('G1 ')]), len(result['path']))
+        self.assertLess(code.index('M5'), heat_on)
+
+    def test_auto_access_preserves_contour_pairing_and_avoids_part(self):
+        plain = plan(job())
+        auto = plan(job(auto_access=True))
+        self.assertEqual(auto['sections'][1:-1], plain['sections'])
+        for phase,index in ((0,0),(-1,-1)):
+            access = auto['sections'][phase]
+            targets = auto['sections'][1:-1]
+            for step in range(21):
+                t = step/20
+                mix = lambda p: [p[k]*(1-t)+p[k+2]*t for k in (0,1)]
+                lead = LineString([mix(access), mix(targets[index])])
+                self.assertFalse(lead.intersects(Polygon([mix(p) for p in targets]).buffer(-1e-7)))
+
+    def test_auto_access_side_and_top_approach_follows_boundary(self):
+        profile = {'contours':[rectangle(100,70)]}
+        for start in (0,25,50,75):
+            with self.subTest(start=start):
+                data = job(xy=profile,uv=profile,xy_x=-50,uv_x=-50,xy_y=180,uv_y=180,
+                           auto_access=True,block_height=300,xy_start=start,xy_end=start,uv_start=start,uv_end=start)
+                result = plan(data)
+                for a,b in zip(result['approach'],result['approach'][1:]):
+                    self.assertEqual(a[:2], a[2:])
+                    self.assertEqual(b[:2], b[2:])
+                    # Jede kalte Teilstrecke liegt außerhalb des aufliegenden Blocks.
+                    x,y = (a[0]+b[0])/2, (a[1]+b[1])/2
+                    self.assertTrue(abs(x) >= data['block_width']/2 or y >= data['block_height'])
+
+    def test_auto_access_rejects_burn_outside_block(self):
+        profile = {'contours':[rectangle(100,70)]}
+        with self.assertRaisesRegex(CamError, 'Abbrandbahn.*Block'):
+            plan(job(xy=profile,uv=profile,xy_x=-50,uv_x=-50,xy_y=0,uv_y=0,
+                     auto_access=True,block_width=100))
+
+    def test_auto_access_rejects_hidden_start_and_manual_or_inner(self):
+        # Der innere Punkt einer Spirale ist durch eine ganze Windung verdeckt.
+        spiral = {'contours':[[[50,50],[50,80],[20,80],[20,20],[80,20],[80,90],
+                              [10,90],[10,10],[90,10],[90,100]]]}
+        with self.assertRaisesRegex(CamError, 'Kein.*Zugang'):
+            plan(job(xy=spiral,uv=spiral,mode='center',auto_access=True))
+        for changes in (dict(mode='inner'),dict(access=True)):
+            with self.subTest(changes=changes), self.assertRaisesRegex(CamError, 'nicht.*kombinierbar'):
+                plan(job(auto_access=True,**changes))
+
+    def test_auto_access_open_and_partial_profiles(self):
+        for profile,mode,start,end in (({'contours':[[[0,0],[40,0],[40,20]]]},'left',0,100),
+                                       ({'contours':[rectangle()]},'outer',0,50)):
+            with self.subTest(mode=mode):
+                result = plan(job(xy=profile,uv=profile,auto_access=True,mode=mode,
+                                  xy_start=start,uv_start=start,xy_end=end,uv_end=end))
+                self.assertTrue(result['access_enabled'])
+                self.assertGreater(len(result['sections']), 3)
+                check_room(result['sections'],400,300)
+
     def test_centered_machine_boundaries(self):
         check_room([[-200,0,200,300]], 400,300)
         for point in [[-200.01,0,0,0], [200.01,0,0,0],
@@ -168,12 +300,12 @@ class PlanTests(unittest.TestCase):
         profile = {'contours': [rectangle(100,70)]}
         result = plan(job(xy=profile, uv=profile, xy_x=-50, uv_x=-50,
                           block_width=100, block_height=130, block_span=300,
-                          burn_radius=0, controller_confirmed=True, s_max=1000))
+                          burn_radius=0, controller_confirmed=True, s_max=1000, **outside_access()))
         self.assertEqual(result['room']['z_xy'], 150)
         self.assertEqual(result['room']['z_uv'], 450)
         self.assertEqual(min(p[0] for p in result['path']), -50)
-        self.assertEqual(max(p[0] for p in result['path']), 50)
-        self.assertIn('X-50.00000', result['gcode'])
+        self.assertEqual(max(p[0] for p in result['path'][1:-1]), 50)
+        self.assertIn('X-250.00000', result['gcode'])
         changed = plan(job(xy=profile, uv=profile, xy_x=-50, uv_x=-50,
                            block_width=100, block_height=130, block_span=600,
                            burn_radius=0))
@@ -226,7 +358,7 @@ class PlanTests(unittest.TestCase):
             synchronize(rectangle(), [[0,0],[40,0],[20,30],[0,0]], 40)
 
     def test_compensated_corners_reached_in_same_gcode_block(self):
-        result = plan(job(controller_confirmed=True,s_max=2000,segments=4))
+        result = plan(job(controller_confirmed=True,s_max=2000,segments=4,**outside_access()))
         moves = [line for line in result['gcode'].splitlines() if line.startswith('G1 ')]
         # Beide Rechtecke beginnen nach dem Offset auf der unteren Kante.
         # Jede folgende Ecke muss auf beiden Seiten im selben Satz liegen.
@@ -234,7 +366,7 @@ class PlanTests(unittest.TestCase):
                        [59.5,130.5,69.5,130.5], [59.5,59.5,69.5,59.5]):
             index = next(i for i,p in enumerate(result['sections'])
                          if math.dist(p,corner) < 1e-8)
-            axis_point = result['path'][index]
+            axis_point = result['machine_path'][index]
             self.assertTrue(all(f'{axis}{v:.5f}' in moves[index-1]
                                 for axis,v in zip('XYUV',axis_point)))
 
@@ -295,7 +427,7 @@ class PlanTests(unittest.TestCase):
                 plan(job(**changes))
 
     def test_generic_gcode_power_axes_and_shutdown(self):
-        result = plan(job(controller_confirmed=True,s_max=2000))
+        result = plan(job(controller_confirmed=True,s_max=2000,**outside_access()))
         code = result['gcode']
         self.assertIn('M3 S600.00000', code)
         self.assertIn('G21\nG90\nG94\nM5', code)
@@ -340,7 +472,7 @@ class APITests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             profiles.append(response.get_json())
         response = self.client.post('/api/plan', json=job(xy=profiles[0], uv=profiles[1],
-            xy_x=-50, uv_x=-100, xy_y=100, uv_y=50, controller_confirmed=True, s_max=1000))
+            xy_x=-50, uv_x=-100, xy_y=100, uv_y=50, controller_confirmed=True, s_max=1000, **outside_access()))
         self.assertEqual(response.status_code, 200, response.get_json())
         self.assertIn('G1 ', response.get_json()['gcode'])
 

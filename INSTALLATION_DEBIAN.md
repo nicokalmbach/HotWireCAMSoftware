@@ -116,7 +116,7 @@ Internetfreigabe. Firewall und Router werden vom Installer nicht verändert.
 Falls nötig, am Container beziehungsweise LXC-Host gezielt TCP-Port 5001 für
 das eigene Netzwerk erlauben. Ein Portwechsel ersetzt keine Sicherheitsfreigabe.
 
-In der Website die Version `0.2.1` kontrollieren, wenn genau dieser Git-Stand
+In der Website die Version `0.2.5` kontrollieren, wenn genau dieser Git-Stand
 installiert wurde. Danach „Demobeispiel laden“ und „Schneidweg berechnen“ wählen.
 Demoangaben sind keine bestätigten Maschinenparameter. Eine Maschinenanbindung
 ist weiterhin nicht implementiert.

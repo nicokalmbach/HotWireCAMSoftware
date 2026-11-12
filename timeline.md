@@ -5,6 +5,115 @@ Für jede neue Version einen eigenen Eintrag mit den tatsächlich durchgeführte
 selben Arbeitsschritt aktualisieren. Eine Versionsnummer dokumentiert den
 Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt.
 
+## 0.2.5
+
+- Einschalten der Heizung mindestens 10 mm vor Materialeintritt implementiert.
+  Bei automatischen Randzugängen gemeinsamer Einschaltpunkt 10 mm normal
+  außerhalb der Rohteilfläche, dann G1 mit Schnittvorschub über die Luftstrecke
+  zur Kante und weiter zur Kontur. G0 endet am Einschaltpunkt; dort M3/S vor G1.
+- Manuelle Außenzugänge behalten größere Abstände bei; nur fehlender Freiraum
+  bis mindestens 10 mm wird ergänzt. Verfahrraum und freie Kaltanfahrt geprüft,
+  alternative automatische Eintrittsseiten bevorzugt. Ohne passenden Freiraum
+  bleibt der Entwurf sichtbar, Export und Programmwiedergabe sind gesperrt.
+- Äußeren Heizvorlauf getrennt vom Materialweg als `heat_lead` geführt und als
+  zusätzlichen G1-Satz rückgeprüft. Wiedergabe übernimmt die neue Phase aus dem
+  ausgegebenen Code; Einschaltpunkt und Luftweg markiert. Keine zusätzliche
+  Aufheizpause, Temperaturregelung oder Hardwareparameter erfunden.
+- Version, Bedienhinweise, Architektur und betroffene Anleitungen aktualisiert.
+  Kein Release oder Tag angelegt.
+- Prüfung: fünf neue Tests für 10 mm je Blockseite im ausgegebenen Code,
+  oberen Eintritt bei fehlendem Seitenabstand, Exportsperre ohne Freiraum,
+  manuelle Abstände und Rückprüfung bei entferntem Heizvorlauf bestanden.
+  Insgesamt 58/60 Tests erfolgreich; die bekannten Fehler
+  `test_partial_contour_start_end` und `test_crossed_wire_surface` bleiben offen.
+  Erweiterter Chrome-Test mit Heizvorlauf, M3/G1 und Zwischenpositionen vor
+  Materialeintritt außerhalb der Sandbox bestanden. Keine Hardwareprüfung
+  oder LXC-Installation durchgeführt.
+
+## 0.2.4
+
+- Ausgegebenen Beispiel-G-Code zuerst geprüft: M3/S vor der Einfahrt,
+  G1 mit F für Einfahrt/Kontur/Ausfahrt und M5 erst danach bereits vorhanden.
+  Sichtbaren Sprung auf die bisherige Satzendpunkt-Wiedergabe zurückgeführt.
+- `nc_program.py` ergänzt: eigenen Text rücklesen und Achspositionen,
+  Bewegungsanzahl, G0/G1, F, S, M3/M5 und Programmende gegen die freigegebene
+  Planung prüfen. Falscher Postprozessor-Ausgang verhindert den Download.
+- Rückgelesene Satzfolge als `program` an den Browser übergeben. `program.js`
+  interpoliert Positionen innerhalb eines Satzes und verwendet für G1 die
+  ausgegebene XYUV-Weglänge und F. Kaltanfahrt, heiße Ein-/Ausfahrt und Kontur
+  werden mit M3/M5-Zustand und zugehöriger G-Code-Zeile wiedergegeben.
+- G1-Anzeigefaktoren 1×/10×/50× und ausdrücklich schematische G0-Anzeigezeit
+  von 1 s je nicht leerem Satz ergänzt. Angeforderte Heizleistung orange, Leistung
+  aus blau; M3 mit S0 wird nicht als positive Heizleistung dargestellt.
+- Ohne S-Zuordnung interne Vorlage desselben Postprozessors ohne Hardware-S-Wert
+  rückgelesen, ohne freien Zugang nur statische Geometrie. Keine Aufheiz-,
+  Thermik- oder Beschleunigungssimulation ergänzt.
+- Versionsnummer und betroffene Dokumentation konsistent aktualisiert.
+  Kein Release oder Tag angelegt.
+- Prüfung: acht neue Python-Tests für heiße Ein-/Ausfahrt, lückenlose Positionen,
+  manipulierte Bewegungen/Vorschübe/Heizleistung, ungültige Modi, Vorschauvorlage,
+  Leistung 0 und API-Exportsperre bestanden; insgesamt 53/55 erfolgreich.
+  Die bekannten Fehler `test_partial_contour_start_end` und
+  `test_crossed_wire_surface` bleiben offen. Erweiterter Chrome-Test mit
+  Zwischenpositionen, G1-Zeitverlauf, M3/M5 und Exportzeilen außerhalb der Sandbox
+  bestanden. Zwischenposition in der heißen Ausfahrt auch im Canvas visuell
+  kontrolliert. Der untersuchte Beispiel-Export blieb gegenüber der ersten
+  Prüfung textgleich. Keine Hardwareprüfung oder LXC-Installation durchgeführt.
+
+## 0.2.3
+
+- Maschinennullpunkt aus den Kontaktschaltern von Rohteilnullpunkt, mittigem
+  Planungsraum und Schnittstart getrennt. X/U-Schalter positiv (Standard
+  +Raumbreite/2, tatsächliche positive Lage bei Bedarf einstellbar), Y/V unten
+  auf Auflagehöhe. Maschinenkoordinaten für den Export um die Schalterlage versetzt.
+- Jeden Export auf Start X0/Y0/U0/V0 am zuvor gesetzten Maschinennullpunkt und
+  Kaltanfahrt mit M5/G0 umgestellt; danach M3/S und G1 mit Schneidvorschub.
+- Unterkante und beide unteren Ecken als Ein-/Austritt gesperrt. Automatische
+  Zugänge nur seitlich oder oben; manuelle Randpunkte an der Unterseite ebenfalls
+  abgewiesen. G0-Route außen beziehungsweise über das aufliegende Rohteil gesucht;
+  die gesamte Achskoordinatenhülle jeder Teilbewegung wird berücksichtigt.
+- Schnittvorschau und Exportsperre getrennt: blockierter Maschinenstart,
+  innere Einfädelpunkte ohne freien Zugang und im Material endende Wege liefern
+  keinen Export ab Maschinennullpunkt. Vorschau zeigt getrennte Nullpunkte und
+  aktuelle Planungs-/Maschinenkoordinaten.
+- Version und betroffene Dokumentation konsistent aktualisiert. Kein Release
+  oder Tag angelegt.
+- Prüfung: fünf neue Regressionstests bestanden, insgesamt 45/47 Tests erfolgreich.
+  Die bekannten Fehler `test_partial_contour_start_end` und
+  `test_crossed_wire_surface` bleiben offen. Erweiterter Chrome-Browsertest
+  außerhalb der Sandbox bestanden: getrennte Nullpunkte, G0 vor Heizung,
+  Koordinatenumrechnung und Sperre einer durch das Rohteil führenden Anfahrt
+  einschließlich bestehender Platzierungs-/Import-/Exportprüfungen.
+  Keine Hardwareprüfung oder LXC-Installation durchgeführt.
+
+## 0.2.2
+
+- Seitenschnitte um direktes Ziehen und Tastaturverschiebung (1 mm / Umschalt
+  10 mm) ergänzt; Abbildung während des Ziehens stabil gehalten. Dateizentren
+  beider Seiten sind auch bei verschiedener Skalierung und getrennten Dateien
+  gekoppelt. Profilfelder, Import und Zentrierung verwenden dieselbe Kopplung.
+- Sofortige Blockgrenzenwarnung und automatische Serverprüfung nach 250 ms
+  Eingabepause mit gültig/ungültig-Rückmeldung und neuem vollständigem Drahtweg.
+  Alte Vorschauen/Exporte werden verworfen, laufende Live-Anfragen abgebrochen
+  und verspätete Antworten durch einen Revisionszähler abgefangen.
+- Automatische Ein-/Ausfahrt am Blockrand mit kurzen geraden Verbindungen zu
+  bestehenden Konturstarts/-enden implementiert. Zugangskandidaten werden auf
+  Nenn- und Abbrandkontur in 21 Zwischenquerschnitten gegen vorzeitige Durchquerung
+  geprüft. Heißer Weg bleibt einschließlich Abbrand vollständig im Block.
+  Innenkonturen verwenden weiterhin manuelle Zugangspunkte.
+- Kaltanfahrt vom gesetzten Nullpunkt entlang des Blockrands als separate
+  blaue Vorschau und im G-Code mit M5 vor dem Einschalten der Heizung ergänzt.
+  Blockkanten müssen tatsächlich frei zugänglich sein; Auflage/Spannmittel,
+  Referenzfahrt und Maschinenkommunikation sind nicht implementiert.
+- Version und betroffene Anleitungen aktualisiert. Kein Release oder Tag angelegt.
+- Prüfung: alle sechs neuen Planungstests bestanden; insgesamt 40/42 erfolgreich.
+  Die bekannten Fehler `test_partial_contour_start_end` und
+  `test_crossed_wire_surface` bleiben offen. Erweiterte Chrome-Prüfung außerhalb
+  der Sandbox erfolgreich: gekoppeltes Ziehen/Tastatur/Skalierung, Block- und
+  Abbrandfeedback, alte Live-Antworten, automatischer Randzugang/Kaltanfahrt und
+  bestehende Import-/Export-/Innenkonturfunktionen. Canvas-Geometrie visuell
+  kontrolliert. Keine Hardwareprüfung oder LXC-Installation durchgeführt.
+
 ## 0.2.1
 
 - SVG-Import um echte Eckinformationen aus den ursprünglichen Segmenten erweitert.

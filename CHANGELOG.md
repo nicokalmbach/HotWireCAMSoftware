@@ -7,6 +7,91 @@ keinen Versionswechsel.
 
 ## Unveröffentlicht
 
+### 0.2.5
+
+- M3/S mindestens 10 mm vor Materialeintritt: G0 endet am äußeren Einschaltpunkt,
+  anschließend G1 mit Schnittvorschub zur Rohteilkante und weiter ins Material.
+  Automatisch gewählte Randzugänge erhalten auf beiden Seiten einen parallelen,
+  genau 10 mm langen Vorlauf normal zur Rohteilfläche. Weiter außen liegende
+  manuelle Zugangspunkte bleiben erhalten; fehlender Abstand wird ergänzt.
+- Zugangssuche berücksichtigt Verfahrraum und Erreichbarkeit des Heizpunkts.
+  Andere Eintrittsflächen werden bei fehlendem Seitenabstand geprüft; ohne
+  Freiraum bleiben Export und Programmwiedergabe gesperrt, die Geometrie sichtbar.
+- G-Code-Rückprüfung um den zusätzlichen heißen Luftweg erweitert; Wiedergabe
+  und Markierung übernehmen diesen Satz als Heizvorlauf aus dem ausgegebenen
+  Code. Keine zusätzliche Aufheizpause oder Temperaturregelung ergänzt.
+- Version und betroffene Dokumentation konsistent auf 0.2.5 aktualisiert.
+- Prüfung: fünf neue Regressionstests und erweiterter Chrome-Test außerhalb
+  der Sandbox bestanden. Insgesamt 58/60 Tests erfolgreich; bekannte Fehler
+  `test_partial_contour_start_end` und `test_crossed_wire_surface` bleiben offen.
+  Keine Hardwareprüfung.
+
+### 0.2.4
+
+- G-Code-Ein-/Ausfahrt geprüft: Der untersuchte Export enthält M3/S vor der
+  Einfahrt und G1 mit Schneidvorschub bis zur Rohteilkante, erst danach M5.
+  Der sichtbare Sprung entstand durch die bisherige Anzeige eines Satzendpunkts
+  je Animationsschritt, auch bei langen Ein-/Ausfahrtsätzen.
+- Eigenen Postprozessor-Ausgang vor Export rücklesen und gegen freigegebene
+  Positionen, G0/G1, F, S und Heizstatus prüfen. Manipulierte oder inkonsistente
+  Ausgaben verhindern den Export. Kein allgemeiner Maschinen-G-Code-Interpreter.
+- Programmwiedergabe aus genau diesen rückgelesenen Sätzen statt aus separaten
+  Planungsstützpunkten. Kontinuierliche G1-Bewegung nach ausgegebenem F, auch
+  innerhalb der Ein-/Ausfahrt; M3/M5 und Codezeile sichtbar. Draht orange bei
+  angeforderter Heizleistung, blau bei ausgeschalteter Leistung.
+- G1-Wiedergabe 1×/10×/50×; G0 ausdrücklich schematisch mit 1 s je nicht leerem
+  Satz. Ohne S-Zuordnung dieselbe interne Vorlage ohne erfundenen Hardware-S-Wert;
+  ohne freie Anfahrt nur Geometrie ohne Programmwiedergabe. Keine Thermik- oder
+  Beschleunigungssimulation.
+- Version und betroffene Dokumentation auf 0.2.4 aktualisiert.
+- Prüfung: acht neue Python-Tests und erweiterter Chrome-Test außerhalb der
+  Sandbox bestanden. Insgesamt 53/55 Tests erfolgreich; bekannte Fehler
+  `test_partial_contour_start_end` und `test_crossed_wire_surface` bleiben offen.
+  Keine Hardwareprüfung.
+
+### 0.2.3
+
+- Maschinen-, Rohteilnullpunkt und Schnittstart getrennt. Kontaktschalter setzen
+  Y/V unten und X/U auf der positiven Seite; Standard ist +Raumbreite/2, eine
+  frühere tatsächliche positive Schalterlage ist je X/U einstellbar. Vorschau
+  und Profilfelder bleiben im mittigen Planungsraum; Exportkoordinaten werden
+  um die Schalterlage versetzt.
+- Jeder Export beginnt am Maschinennullpunkt X0/Y0/U0/V0 und fährt mit M5/G0
+  ohne Schneidvorschub zum Schnittstart. Erst danach M3/S und G1 mit F.
+- Automatische Ein-/Ausfahrt ausschließlich oben oder seitlich. Die aufliegende
+  Unterseite samt unteren Ecken ist auch für manuelle Randzugänge gesperrt.
+  Kaltanfahrt zur gegenüberliegenden Seite führt über den Block. Jede schnelle
+  Teilbewegung bleibt mit ihrer gesamten Achskoordinatenhülle außerhalb des Rohteils.
+- Ohne freie Kaltanfahrt oder außen liegenden Austritt bleibt die geometrische
+  Schnittvorschau verfügbar, der Export jedoch gesperrt. Das gilt auch für
+  innere Einfädelpunkte ohne von außen erreichbaren Zugang.
+- Version, Bedienhinweise, Architektur und Versionsverlauf auf 0.2.3 aktualisiert.
+- Prüfung: fünf neue Regressionstests und erweiterter Chrome-Browsertest
+  außerhalb der Sandbox bestanden. Insgesamt 45/47 Tests erfolgreich; die
+  bekannten Fehler `test_partial_contour_start_end` und
+  `test_crossed_wire_surface` bleiben offen. Keine Hardwareprüfung.
+
+### 0.2.2
+
+- Profile im XY-/UV-Seitenschnitt per Maus/Touch oder Pfeiltasten verschiebbar.
+  Zentren der gesamten Dateiausdehnungen bleiben für beide Seiten gekoppelt,
+  auch bei verschiedenen Dateien und Skalierungen, Import und Zentrierung.
+- Sofortige rote Blockwarnung und automatische vollständige Planungsprüfung
+  nach 250 ms Eingabepause; grünes Feedback erst nach Servererfolg. Laufende
+  Live-Anfragen werden abgebrochen und alte Antworten per Revision verworfen.
+- Automatische kurze Randzugänge zu den eingestellten Konturstarts/-enden,
+  für Nenn-/Abbrandbahn und 21 Zwischenquerschnitte auf Durchquerung geprüft.
+  Der gesamte heiße Weg muss im Block bleiben. Manuelle Innenzugänge bleiben erhalten.
+- Kaltanfahrt ab gesetztem Nullpunkt entlang freier Blockkanten blau gestrichelt
+  dargestellt und als G1 mit M5 vor M3/S exportiert. Keine Referenzfahrt,
+  Maschinenanbindung, globale Startpunktoptimierung oder Prüfung von Spannmitteln.
+- Versionsnummer und betroffene Dokumentation konsistent auf 0.2.2 aktualisiert.
+- Prüfung: sechs neue Planungstests erfolgreich; insgesamt 40/42 Tests bestanden.
+  Die beiden bekannten Fehler `test_partial_contour_start_end` und
+  `test_crossed_wire_surface` bestehen weiterhin. Erweiterter Chrome-Browsertest
+  außerhalb der Sandbox bestanden, einschließlich Block-/Abbrandfeedback und
+  verspäteter Live-Antworten. Keine Hardwareprüfung.
+
 ### 0.2.1
 
 - SVG-Kreis-/Kurvenplanung korrigiert: echte Ecken aus ursprünglichen

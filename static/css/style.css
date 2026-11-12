@@ -52,6 +52,13 @@ legend { color: var(--accent); font-size: 13px; padding: 0 8px; }
 #status { padding: 16px; border-left: 3px solid var(--accent); background: var(--surface); line-height: 1.6; }
 #preview { display: block; width: 100%; height: auto; background: #101923; border: 1px solid var(--border); border-radius: 8px; }
 #preview.drag-over { outline: 3px solid var(--teal); outline-offset: 3px; }
+#preview.can-move { cursor: grab; touch-action: none; }
+#preview.moving { cursor: grabbing; }
+#placement-feedback { min-height: 1.5em; }
+#placement-feedback[data-state="invalid"] { color: #ff7b83; }
+#placement-feedback[data-state="valid"] { color: #79db98; }
+#program-state[data-heater="on"] { color: #ff9650; }
+#program-state[data-heater="off"] { color: #8bbbe8; }
 .workspace-import { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 16px 0; }
 .workspace-import label { flex: 1; min-width: 180px; }
 #workspace-summary { min-height: 2.5em; }

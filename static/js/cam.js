@@ -46,20 +46,73 @@ const filenames = {xy: '', uv: ''};
 const sameProfile = document.querySelector('#same-profile');
 let separateUVContour = '0';
 const generations = {xy: 0, uv: 0};
-let result = null, revision = 0, playing = false, lastFrame = 0;
+let result = null, revision = 0, playing = false, lastFrame = null, animationFrame = null;
+let liveTimer = null, liveAbort = null, dragging = null;
+let placementState = 'idle', placementMessage = '';
+
+function planningData() {
+    const uvProfile = sameProfile.checked ? profiles.xy : profiles.uv;
+    if (!profiles.xy || !uvProfile) return null;
+    const data = {xy: profiles.xy, uv: uvProfile};
+    for (const input of form.elements) {
+        if (!input.name || input.disabled) continue;
+        if (input.name.startsWith('machine_zero_') && input.value === '') continue;
+        data[input.name] = input.type === 'checkbox' ? input.checked : input.type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value;
+    }
+    if (sameProfile.checked) data.uv_contour = form.elements.xy_contour.value;
+    return data;
+}
+function showResult(dataResult) {
+    result = dataResult;
+    progress.max = result.program?.moves.length || 1; progress.value = 0;
+    progress.disabled = play.disabled = !result.program;
+    download.disabled = !result.gcode;
+    document.querySelector('#code').textContent = result.gcode || result.approach_error || 'Vorschau berechnet. Zum Export S-Maximalwert und geprüftes Steuerungsprofil ergänzen.';
+    document.querySelector('#warnings').replaceChildren(...result.warnings.map(warning => {
+        const li = document.createElement('li'); li.textContent = warning; return li;
+    }));
+    placementState = result.approach_error ? 'invalid' : 'valid';
+    placementMessage = result.approach_error || 'Geometrisch geprüft: Profile, Abbrand, Zugang, Kaltanfahrt und Achswege passen.';
+    statusText.textContent = `${result.segments} gemeinsame Kontursegmente berechnet. ${result.gcode ? 'Export verfügbar.' : 'Vorschau verfügbar.'}`;
+    draw();
+}
+function scheduleLivePlan() {
+    clearTimeout(liveTimer);
+    if (!planningData()) return;
+    placementState = 'pending'; placementMessage = 'Geometrieprüfung läuft …';
+    draw();
+    liveTimer = setTimeout(async () => {
+        const current = revision, data = planningData();
+        // Fehlende Schnitt-/Maschinenparameter dürfen nicht als gültige Platzierung erscheinen.
+        if (!data) return;
+        const controller = new AbortController(); liveAbort = controller;
+        try {
+            const response = await responseJSON(await fetch('/api/plan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data), signal:controller.signal}));
+            if (current === revision) showResult(response);
+        } catch (error) {
+            if (current !== revision || error.name === 'AbortError') return;
+            placementState = 'invalid'; placementMessage = error.message; statusText.textContent=error.message; draw();
+        } finally { if (liveAbort === controller) liveAbort = null; }
+    }, 250);
+}
 
 function invalidate() {
+    clearTimeout(liveTimer); liveAbort?.abort();
     revision++;
+    placementState = 'idle'; placementMessage = '';
     result = null;
-    playing = false;
+    stopPlayback();
     download.disabled = play.disabled = progress.disabled = true;
     play.textContent = 'Abspielen';
-    document.querySelector('#code').textContent = 'Nach Änderungen den Schneidweg erneut berechnen.';
+    document.querySelector('#code').textContent = 'Geänderte Eingaben werden automatisch geprüft. Noch kein aktueller Export.';
     document.querySelector('#warnings').replaceChildren();
     document.querySelector('#coordinates').textContent = '';
+    document.querySelector('#program-state').textContent = 'Noch kein aktuelles geprüftes Bewegungsprogramm.';
+    for(const key of ['heater','command','phase']) delete document.querySelector('#program-state').dataset[key];
     document.querySelector('#step-label').textContent = 'Kein aktueller Schneidweg';
-    statusText.textContent = 'Eingaben geändert. Schneidweg neu berechnen.';
+    statusText.textContent = 'Eingaben geändert. Schneidweg wird automatisch neu geprüft.';
     draw();
+    scheduleLivePlan();
 }
 async function responseJSON(response) {
     const data = await response.json();
@@ -71,6 +124,7 @@ function setProfile(name, data, filename) {
     filenames[name] = filename;
     renderProfile(name, data, filename);
     if (name === 'xy' && sameProfile.checked) updateSharedProfile();
+    coupleCenters(name);
     draw();
 }
 function renderProfile(name, data, filename) {
@@ -103,6 +157,7 @@ function updateSharedProfile() {
         select.value = document.querySelector('#contour-xy').value;
         select.disabled = true;
     } else if (profiles.uv) select.value = separateUVContour;
+    coupleCenters('xy');
     draw();
 }
 sameProfile.addEventListener('change', () => {
@@ -113,6 +168,23 @@ sameProfile.addEventListener('change', () => {
 document.querySelector('#contour-xy').addEventListener('change', () => {
     if (sameProfile.checked) updateSharedProfile();
 });
+function profileSize(name) {
+    const profile = name === 'uv' && sameProfile.checked ? profiles.xy : profiles[name];
+    const scale = Number(form.elements[name+'_scale'].value);
+    if (!profile || !Number.isFinite(scale) || scale <= 0) return null;
+    const points = profile.contours.flat(), xs = points.map(p=>p[0]), ys = points.map(p=>p[1]);
+    return [(Math.max(...xs)-Math.min(...xs))*scale, (Math.max(...ys)-Math.min(...ys))*scale];
+}
+function coupleCenters(source) {
+    const target = source === 'xy' ? 'uv' : 'xy';
+    const a = profileSize(source), b = profileSize(target);
+    if (!a || !b) return;
+    for (const [i,axis] of ['x','y'].entries()) {
+        const input = form.elements[source+'_'+axis];
+        if (input.value === '' || !Number.isFinite(Number(input.value))) continue;
+        form.elements[target+'_'+axis].value = Number(input.value)+(a[i]-b[i])/2;
+    }
+}
 function centerProfile(name) {
     const profile = name === 'uv' && sameProfile.checked ? profiles.xy : profiles[name];
     if (!profile) {statusText.textContent='Zuerst eine Profildatei einfügen.'; return;}
@@ -125,6 +197,7 @@ function centerProfile(name) {
     const xs=points.map(p=>p[0]), ys=points.map(p=>p[1]);
     form.elements[name+'_x'].value=-(Math.max(...xs)-Math.min(...xs))*scale/2;
     form.elements[name+'_y'].value=(height-(Math.max(...ys)-Math.min(...ys))*scale)/2;
+    coupleCenters(name);
     invalidate();
 }
 async function loadProfile(name, file) {
@@ -187,9 +260,13 @@ function updateBlockDistances() {
 }
 form.addEventListener('input', event => {
     if(event.target.closest('#vorschau')) return;
+    const match = event.target.name?.match(/^(xy|uv)_(x|y|scale)$/);
+    if (match) coupleCenters(match[1]);
     updateBlockDistances(); invalidate();
 });
 function updateAccess() {
+    if (form.elements.mode.value === 'inner') form.elements.auto_access.checked = false;
+    form.elements.auto_access.disabled = form.elements.mode.value === 'inner';
     document.querySelectorAll('#access-fields input').forEach(input => {
         input.disabled = !form.elements.access.checked;
         input.required = form.elements.access.checked;
@@ -198,36 +275,27 @@ function updateAccess() {
 }
 form.addEventListener('change', event => {
     if(event.target.closest('#vorschau')) return;
+    if (event.target === form.elements.access && event.target.checked) form.elements.auto_access.checked = false;
+    if (event.target === form.elements.auto_access && event.target.checked) form.elements.access.checked = false;
     updateAccess(); invalidate();
 });
 form.addEventListener('submit', async event => {
     event.preventDefault(); invalidate();
+    clearTimeout(liveTimer);
     const uvProfile = sameProfile.checked ? profiles.xy : profiles.uv;
     if (!profiles.xy || !uvProfile) {statusText.textContent = sameProfile.checked ? 'Bitte ein gültiges XY-Profil laden.' : 'Bitte zwei gültige Profildateien laden.'; return;}
     const current = revision;
-    const data = {xy: profiles.xy, uv: uvProfile};
-    for (const input of form.elements) {
-        if (!input.name || input.disabled) continue;
-        data[input.name] = input.type === 'checkbox' ? input.checked : input.type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value;
-    }
-    if (sameProfile.checked) data.uv_contour = form.elements.xy_contour.value;
+    const data = planningData();
     const calculate = document.querySelector('#calculate');
     calculate.disabled = true;
     statusText.textContent = 'Konturen, Abbrand und Schneidraum werden geprüft …';
     try {
         const dataResult = await responseJSON(await fetch('/api/plan', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)}));
         if (current !== revision) return;
-        result = dataResult;
-        progress.max = result.path.length-1; progress.value = 0;
-        progress.disabled = play.disabled = false;
-        download.disabled = !result.gcode;
-        document.querySelector('#code').textContent = result.gcode || 'Vorschau berechnet. Zum Export S-Maximalwert und geprüftes Steuerungsprofil ergänzen.';
-        document.querySelector('#warnings').replaceChildren(...result.warnings.map(warning => {
-            const li = document.createElement('li'); li.textContent = warning; return li;
-        }));
+        showResult(dataResult);
         statusText.textContent = `${result.segments} gemeinsame Kontursegmente berechnet. ${result.gcode ? 'Export verfügbar.' : 'Vorschau verfügbar.'}`;
         draw();
-    } catch (error) {if (current === revision) statusText.textContent = error.message;}
+    } catch (error) {if (current === revision) {statusText.textContent = error.message; placementState='invalid'; placementMessage=error.message; draw();}}
     finally {calculate.disabled = false;}
 });
 function liveProfile(name, block) {
@@ -252,48 +320,113 @@ function draw() {
     const validBlock=validRoom && [bw,bh,bs].every(Number.isFinite) && bw>=.01 && bh>=.01 && bs>=.001 && bw<=width && bh<=height && bs<=span;
     const block=validBlock?{width:bw,height:bh,span:bs,z0:(span-bs)/2,z1:(span+bs)/2}:null;
     const visibleProfiles=['xy','uv'].map(name=>liveProfile(name,block)).filter(Boolean);
+    const machineZero=room ? ['x','u'].flatMap(axis=>[form.elements['machine_zero_'+axis].value===''?width/2:read('machine_zero_'+axis),0]) : null;
     const access={};
     if(form.elements.access.checked) for(const phase of ['entry','exit']) {
         const values=['x','y','u','v'].map(axis=>read(phase+'_'+axis));
         if(values.every(Number.isFinite)) access[phase]=values;
     }
     const step=Number(progress.value);
-    drawWorkspace(canvas,{room,block,profiles:visibleProfiles,result,step,
+    const playback=result ? programPosition(result,step) : null;
+    drawWorkspace(canvas,{room,block,profiles:visibleProfiles,result,step,machineZero,playback,
         view:document.querySelector('#view').value,
         showNominal:document.querySelector('#show-nominal').checked,
-        access,accessEnabled:form.elements.access.checked});
+        access,accessEnabled:form.elements.access.checked,
+        placementState, fixedTransform:dragging?.transform});
     const outside=block && visibleProfiles.some(p=>p.contours.some(c=>c.some(([x,y])=>x < -bw/2 || x > bw/2 || y < 0 || y > bh)));
     const summary=!room ? 'Maschinenmaße eingeben.' : !block ? 'Arbeitsraum sichtbar. Gültige Blockmaße eingeben.'
         : `Block ${bw} × ${bh} × ${bs} mm. Abstand links/rechts zu den Achsebenen jeweils ${block.z0} mm; X/U je Seite ${(width-bw)/2} mm; oben ${height-bh} mm. ${visibleProfiles.length} Profilseite(n) eingefügt. ${outside?'Achtung: Nennkontur liegt außerhalb des Blocks. ':''}${result?'Geprüfter Drahtweg mit Start und Ende sichtbar.':'Konturentwurf, noch kein geprüfter Drahtweg.'}`;
     const summaryElement=document.querySelector('#workspace-summary');
+    const feedback = document.querySelector('#placement-feedback');
+    feedback.dataset.state = outside ? 'invalid' : placementState;
+    feedback.textContent = outside ? 'Position ungültig: Mindestens eine Profilkontur liegt außerhalb des Blocks.'
+        : placementMessage || 'Profile in der XY- oder UV-Seitenansicht ziehen. Beide Zentren bewegen sich gemeinsam.';
     if(summaryElement.textContent!==summary) {
         summaryElement.textContent=summary;
         canvas.setAttribute('aria-label',summary);
     }
     if(!result) return;
-    const p=result.path[step];
-    document.querySelector('#step-label').textContent=`Schritt ${step} / ${result.path.length-1}`;
-    document.querySelector('#coordinates').textContent='Aktuell: '+p.map((v,i)=>`${'XYUV'[i]} ${v.toFixed(3)}`).join(' · ')+' mm. Start: '+result.start.map(v=>v.toFixed(3)).join(' / ')+' · Ende: '+result.end.map(v=>v.toFixed(3)).join(' / ');
+    const state=document.querySelector('#program-state');
+    if (!playback) {
+        state.textContent = 'Nur geometrischer Entwurf: kein ausführbares Bewegungsprogramm. '+(result.approach_error || '');
+        document.querySelector('#step-label').textContent='Keine Programmwiedergabe';
+        return;
+    }
+    const phase={approach:'Kaltanfahrt',preheat:'Heizvorlauf · 10 mm vor Materialeintritt',entry:'Einfahrt',cut:'Konturschnitt',exit:'Ausfahrt',end:'Programmende'}[playback.phase];
+    const heat=playback.heated?'Heizung EIN (M3)':playback.heaterOn?'M3 aktiv, Heizleistung 0':'Heizung AUS (M5)';
+    const stateText=`${result.program.source==='export'?'Export rückgelesen und geprüft':'Vorschauvorlage geprüft · S-Zuordnung noch offen'} · ${phase} · ${playback.command} · ${heat}${playback.finished?'':` · Zeile ${playback.move.line} · ${playback.move.command==='G0'?'Eilgang schematisch':`F${playback.move.feed} mm/min`}`}`;
+    if(state.textContent!==stateText)state.textContent=stateText;
+    state.dataset.heater = playback.heated ? 'on' : 'off';
+    state.dataset.command = playback.command;
+    state.dataset.phase = playback.phase;
+    document.querySelector('#step-label').textContent=`Schritt ${Math.floor(step)} / ${result.program.moves.length}`;
+    document.querySelector('#coordinates').textContent='Planungsraum aktuell: '+playback.axes.map((v,i)=>`${'XYUV'[i]} ${v.toFixed(3)}`).join(' · ')+' mm. Maschinenkoordinaten aktuell: '+playback.machine.map((v,i)=>`${'XYUV'[i]} ${v.toFixed(3)}`).join(' · ')+' mm. Programmstart: Maschinennullpunkt X0 Y0 U0 V0. Schnittstart im Planungsraum: '+result.start.map(v=>v.toFixed(3)).join(' / ');
 }
-progress.addEventListener('input', draw);
+function canvasPoint(event) {
+    const rect = canvas.getBoundingClientRect();
+    return [(event.clientX-rect.left)*canvas.width/rect.width, (event.clientY-rect.top)*canvas.height/rect.height];
+}
+canvas.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || document.querySelector('#view').value === 'wire') return;
+    const name = document.querySelector('#view').value, size = profileSize(name);
+    const transform = canvas.workspaceTransform;
+    if (!size || !transform) return;
+    const [px,py] = canvasPoint(event), [x,y] = transform.unproject(px,py);
+    const left = Number(form.elements[name+'_x'].value), bottom = Number(form.elements[name+'_y'].value);
+    const tolerance = 10/transform.scale;
+    if (x < left-tolerance || x > left+size[0]+tolerance || y < bottom-tolerance || y > bottom+size[1]+tolerance) return;
+    if (dragging) return;
+    dragging = {id:event.pointerId, name, start:[px,py], left, bottom, transform};
+    canvas.focus({preventScroll:true});
+    canvas.setPointerCapture(event.pointerId); canvas.classList.add('moving'); event.preventDefault();
+});
+canvas.addEventListener('pointermove', event => {
+    if (!dragging || event.pointerId !== dragging.id) return;
+    const [x,y] = canvasPoint(event), d = dragging;
+    form.elements[d.name+'_x'].value = (d.left+(x-d.start[0])/d.transform.scale).toFixed(4);
+    form.elements[d.name+'_y'].value = (d.bottom-(y-d.start[1])/d.transform.scale).toFixed(4);
+    coupleCenters(d.name); invalidate();
+});
+function finishDrag(event) {
+    if (!dragging || dragging.id !== event.pointerId) return;
+    dragging = null; canvas.classList.remove('moving');
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    draw();
+}
+canvas.addEventListener('pointerup', finishDrag);
+canvas.addEventListener('pointercancel', finishDrag);
+canvas.addEventListener('lostpointercapture', finishDrag);
+canvas.addEventListener('keydown', event => {
+    const directions = {ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]};
+    const direction = directions[event.key], name = document.querySelector('#view').value;
+    if (!direction || name === 'wire' || !profileSize(name)) return;
+    event.preventDefault();
+    for (const [i,axis] of ['x','y'].entries()) form.elements[name+'_'+axis].value = Number(form.elements[name+'_'+axis].value)+direction[i]*(event.shiftKey?10:1);
+    coupleCenters(name); invalidate();
+});
+progress.addEventListener('input', () => {lastFrame=null;draw();});
 document.querySelector('#view').addEventListener('change', draw);
 document.querySelector('#show-nominal').addEventListener('change', draw);
 play.addEventListener('click', () => {
-    playing = !playing; play.textContent = playing ? 'Pause' : 'Abspielen';
-    if (playing) {
-        if (Number(progress.value) >= Number(progress.max)) progress.value=0;
-        lastFrame=0; requestAnimationFrame(animate);
-    }
+    if (playing) {stopPlayback();return;}
+    if (!result?.program) return;
+    playing = true; play.textContent = 'Pause';
+    if (Number(progress.value) >= Number(progress.max)) progress.value=0;
+    lastFrame=null; animationFrame=requestAnimationFrame(animate);
 });
-function animate(time) {
-    if (!playing || !result) return;
-    if (time-lastFrame > 35) {
-        progress.value = Math.min(Number(progress.max), Number(progress.value)+1);
-        draw(); lastFrame=time;
-        if (Number(progress.value) >= Number(progress.max)) {playing=false;play.textContent='Abspielen';return;}
-    }
-    requestAnimationFrame(animate);
+function stopPlayback() {
+    playing=false;lastFrame=null;
+    if(animationFrame !== null) cancelAnimationFrame(animationFrame);
+    animationFrame=null;play.textContent='Abspielen';
 }
+function animate(time) {
+    if (!playing || !result?.program) return;
+    if(lastFrame !== null) progress.value=advanceProgramCursor(result.program,Number(progress.value),(time-lastFrame)/1000,Number(document.querySelector('#playback-speed').value));
+    lastFrame=time;draw();
+    if(Number(progress.value) >= Number(progress.max)) {stopPlayback();return;}
+    animationFrame=requestAnimationFrame(animate);
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});
 download.addEventListener('click', () => {
     if (!result?.gcode) return;
     const url = URL.createObjectURL(new Blob([result.gcode], {type:'text/plain;charset=utf-8'}));
@@ -310,11 +443,14 @@ document.querySelector('#demo').addEventListener('click', () => {
     }
     const demo = {width:400,height:300,span:600,block_width:300,block_height:200,block_span:400,xy_x:-50,xy_y:60,uv_x:-30,uv_y:60,feed:100,power:30,burn_radius:.5};
     for(const [key,value] of Object.entries(demo)) form.elements[key].value=value;
+    coupleCenters('xy');
     updateSharedProfile();
     updateAccess();
     updateBlockDistances();
     draw();
+    scheduleLivePlan();
     statusText.textContent='Demobeispiel geladen. Alle Maße und Schnittparameter sind ausschließlich Beispieldaten. Schneidweg berechnen, um die Vorschau zu öffnen.';
 });
 updateBlockDistances();
+updateAccess();
 draw();

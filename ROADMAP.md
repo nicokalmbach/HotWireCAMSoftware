@@ -1,7 +1,7 @@
 # Roadmap
 
 Die Versionsziele stammen aus der bisherigen Projektplanung. Sie sind geplante
-Meilensteine ohne festgelegte Termine. Die Anwendung trägt Version `0.2.1`,
+Meilensteine ohne festgelegte Termine. Die Anwendung trägt Version `0.2.5`,
 der ursprüngliche Hardware-Meilenstein 0.1.0 ist aber erst teilweise umgesetzt.
 
 | Zielversion | Schwerpunkt | Stand |
@@ -10,6 +10,10 @@ der ursprüngliche Hardware-Meilenstein 0.1.0 ist aber erst teilweise umgesetzt.
 | 0.1.1 | CAM-Stand und Debian-LXC-Installation | CAM und Installer implementiert; vollständige LXC-Installation noch zu prüfen |
 | 0.2.0 | Referenzschalter und zentriertes Werkstück | CAM-Koordinaten und automatische Blockabstände umgesetzt; Schalterauswertung und Tastatursteuerung offen |
 | 0.2.1 | Direkte Arbeitsraumvorschau | Live-Block mit Bemaßung, Direktimport und zentrierten Profilen sowie Darstellung des vollständigen berechneten Drahtwegs umgesetzt |
+| 0.2.2 | Platzierung und Randzugang | Gekoppelte Profilzentren, Ziehen im Seitenschnitt, automatische Geometrieprüfung, vollständiger heißer Weg im Block und Kaltanfahrt im Export umgesetzt; keine Hardwareprüfung |
+| 0.2.3 | Maschinenbezug und aufliegendes Rohteil | G0 ab Kontaktschalter-Maschinennullpunkt, getrennte Bezugspunkte und Zugänge nur oben/seitlich; Unterseite gesperrt |
+| 0.2.4 | G-Code-Prüfung und Programmwiedergabe | Eigenen Export rücklesen und gegen Planung prüfen; G1-Ein-/Ausfahrt kontinuierlich nach F, Heizstatus aus M3/M5 |
+| 0.2.5 | Heizung vor Materialeintritt | M3/S mindestens 10 mm vor Eintritt, äußerer G1-Heizvorlauf, Freiraumprüfung und Wiedergabe aus Code |
 | 0.3.0 | Referenzfahrt | Geplant |
 | 0.4.0 | Mehrere Achsen | Geplant |
 | 0.5.0 | Koordinierte Bewegungen | Geplant |
@@ -29,15 +33,16 @@ der ursprüngliche Hardware-Meilenstein 0.1.0 ist aber erst teilweise umgesetzt.
 - G-Code-Dialekt, F-Vorschubinterpretation und M3/S/M5-Zuordnung zum Stromregler
   bestätigen; Maschinenmaße und Material-Abbrand praktisch ermitteln.
 
-## Umgesetzte CAM-Funktionen (Stand 0.2.1)
+## Umgesetzte CAM-Funktionen (Stand 0.2.5)
 
 Die bisherige Zielversionstabelle beschreibt Hardware-Meilensteine. Unabhängig
 davon sind folgende lokale CAM-Funktionen implementiert:
 
 - Zwei SVG-/DXF-Profile, Einheitenumrechnung und Auswahl einzelner Konturen.
-- Wahlweise XY-Datei und Kontur für beide Seiten verwenden; weitere
-  Profileinstellungen bleiben je Seite einstellbar.
-- Skalierung, Positionierung und nutzerdefinierter Schneidraum; X/U-Nullpunkt mittig,
+- Wahlweise XY-Datei und Kontur für beide Seiten verwenden; gekoppelte Zentren
+  der gesamten Dateiausdehnungen auch bei verschiedenen Dateien/Skalierungen.
+  Start/Ende und Richtung bleiben je Seite einstellbar.
+- Skalierung, Positionierung und nutzerdefinierter Schneidraum; Planungs-X/U mittig,
   Y/V = 0 auf der Auflageebene. Zentrierter Block mit drei Maßen, automatisch
   berechneten Profilebenen und Prüfung der Nennkonturen gegen die Blockmaße.
 - Räumliches Maschinenmodell mit Führungssäulen, Schlitten, Grundschienen,
@@ -50,17 +55,39 @@ davon sind folgende lokale CAM-Funktionen implementiert:
   einschließlich Abbrand und Teilschnitten synchronisierbar.
 - Nennprogramm vor Abbrandkorrektur; Außen-/Innenoffsets und offene Links-/Rechtswege.
 - Innenkonturen mit gerader Ein-/Ausfahrt und benutzerdefiniertem Zugangspunkt.
+- Automatische kurze Randzugänge zu den eingestellten Start-/Endpunkten,
+  ohne Durchquerung des Bauteilinneren in 21 geprüften Querschnitten; vollständiger
+  Materialschnitt einschließlich Abbrand im Block. Ein-/Austritt oben oder seitlich;
+  die aufliegende Unterseite ist gesperrt.
+- Maschinen-, Rohteilnullpunkt und Schnittstart getrennt. X/U-Kontakte positiv
+  (Standard +Raumbreite/2, alternativ tatsächliche Schalterlage), Y/V unten.
+  Jeder Export mit freier G0-Kaltanfahrt ab Maschinennullpunkt und anschließender
+  G1-Schnittbahn; Koordinaten auf die Schalterlage umgerechnet. Nicht kalt
+  erreichbare innere Einfädelpunkte erlauben nur eine Schnittvorschau.
 - Raum-/Achsprojektionsprüfung, Kollapsprüfung und 21 Zwischenquerschnitte.
-- Statisches Drahtmodell, Schrittregler und geometrische Bewegungswiedergabe.
+- Drahtmodell mit Regler und kontinuierlicher Wiedergabe der rückgelesenen
+  G-Code-Sätze, einschließlich heißer Ein-/Ausfahrt und Heizstatus aus M3/M5.
+  G1-Zeit aus ausgegebenem F; G0 nur mit schematischer Anzeigezeit.
+- Eigene G-Code-Ausgabe auf Positionen, Satzfolge, G0/G1, F und S rückgeprüft;
+  falsche Postprozessor-Ausgabe verhindert den Export. Kein allgemeiner Import
+  oder Interpreter beliebiger Maschinenprogramme.
+- Heizung mindestens 10 mm vor Materialeintritt, bei automatischen Zugängen
+  genau 10 mm normal zur Rohteilfläche; paralleler G1-Heizvorlauf in der Luft
+  mit Schnittvorschub. Freiraum berücksichtigt, alternative Eintrittsseiten
+  geprüft; keine zusätzliche Aufheizpause oder Temperaturregelung.
 - Sofortanzeige von Raum, Block und Maßlinien ohne Schneidwegberechnung;
   Direktimport per Dateiauswahl oder Drag-and-drop auf die Arbeitsraumansicht,
-  Zentrierung und Live-Positionierung über die Profilfelder. Berechnete Wege
+  gemeinsame Zentrierung, Ziehen/Pfeiltasten im Seitenschnitt und gekoppelte
+  Positionsfelder mit sofortiger Blockwarnung und automatischer Serverprüfung.
+  Berechnete Wege
   an den Blockstirnflächen mit Start/Ende sowie markierter Ein-/Ausfahrt.
 - Generischer XYUV-G-Code-Download und Prozentleistung mit konfigurierbarem S-Maximum.
 - Automatisierte Import-, Planungs-, API-Tests und optionaler Edge-Browsertest.
 
-Weiter offen: automatische Lochzuordnung und Auftragsverkettung, automatische
-Zugangsplanung, vollständiger Schneidbarkeitsnachweis, Thermik und Drahtdurchhang.
+Weiter offen: automatische Lochzuordnung und Auftragsverkettung, globale
+Optimierung von Konturstarts/Materialausnutzung, automatische Innenzugänge und
+Umfahrung zusätzlicher Hindernisse, vollständiger Schneidbarkeitsnachweis,
+Thermik und Drahtdurchhang.
 Eine explizite Zuordnung von Formmerkmalen bei abweichenden echten Eckanzahlen
 ist ebenfalls offen. Für DXF und Profildaten ohne SVG-Eckinformationen zählen
 weiterhin alle nichtkollinearen Stützpunkte als Ecken; eine Unterscheidung von
