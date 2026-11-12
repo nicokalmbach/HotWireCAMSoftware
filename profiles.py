@@ -17,17 +17,49 @@ class CamError(ValueError):
     pass
 
 
+class Contour(list):
+    """Polygonzug mit optionalen echten SVG-Ecken (ohne Abflachungsstützpunkte)."""
+    def __init__(self, points, corners=None):
+        super().__init__(points)
+        self.corners = corners
+
+
+def svg_corners(segments):
+    """Tangenten an Segmentübergängen vergleichen, auch am geschlossenen Anfang."""
+    segments = [s for s in segments
+                if any(abs(s.point(t)-s.start) > 1e-9 for t in (.25, .5, .75, 1))]
+    corners = []
+    pairs = list(zip(segments, segments[1:]))
+    if segments and abs(segments[-1].end - segments[0].start) < 1e-7:
+        pairs.append((segments[-1], segments[0]))
+    for previous, following in pairs:
+        # Kleine einseitige Sekanten funktionieren auch bei degenerierten Bezier-Griffen.
+        incoming = previous.end - previous.point(1-1e-6)
+        outgoing = following.point(1e-6) - following.start
+        product = abs(incoming)*abs(outgoing)
+        cross = incoming.x*outgoing.y-incoming.y*outgoing.x
+        dot = incoming.x*outgoing.x+incoming.y*outgoing.y
+        if product and (abs(cross) > product*1e-4 or dot <= 0):
+            corners.append([previous.end.x*25.4/96, -previous.end.y*25.4/96])
+    return corners
+
+
+def clean_point(p):
+    try:
+        if not isinstance(p, (list, tuple)) or len(p) != 2:
+            raise ValueError
+        p = [float(p[0]), float(p[1])]
+    except (TypeError, ValueError) as exc:
+        raise CamError('Profilpunkte müssen jeweils zwei gültige Koordinaten enthalten.') from exc
+    if not all(math.isfinite(v) and abs(v) <= 1e7 for v in p):
+        raise CamError("Ungültige oder zu große Profilkoordinaten.")
+    return p
+
+
 def clean(points):
     result = []
     for p in points:
-        try:
-            if not isinstance(p, (list, tuple)) or len(p) != 2:
-                raise ValueError
-            p = [float(p[0]), float(p[1])]
-        except (TypeError, ValueError) as exc:
-            raise CamError('Profilpunkte müssen jeweils zwei gültige Koordinaten enthalten.') from exc
-        if not all(math.isfinite(v) and abs(v) <= 1e7 for v in p):
-            raise CamError("Ungültige oder zu große Profilkoordinaten.")
+        p = clean_point(p)
         if not result or math.dist(result[-1], p) > 1e-7:
             result.append(p)
     if len(result) < 2 or len(result) > MAX_POINTS:
@@ -66,6 +98,7 @@ def svg_contours(data):
                 raise CamError("SVG-Verweise müssen innerhalb der Datei liegen.")
     svg = SVG.parse(io.BytesIO(data), reify=True, ppi=96)
     contours = []
+    corners = []
     for element in svg.elements():
         if not isinstance(element, Shape):
             continue
@@ -74,20 +107,25 @@ def svg_contours(data):
         path = Path(element)
         path.reify()
         current = []
+        segments = []
         for segment in path:
             if isinstance(segment, Move):
                 if len(current) > 1:
                     contours.append(clean(current))
+                    corners.append(svg_corners(segments))
                 current = [[segment.end.x * 25.4 / 96, -segment.end.y * 25.4 / 96]]
+                segments = []
             else:
                 if not current:
                     current = [[segment.start.x * 25.4 / 96, -segment.start.y * 25.4 / 96]]
                 current.extend(_flatten(segment))
+                segments.append(segment)
                 if len(current) > MAX_POINTS:
                     raise CamError("SVG enthält zu viele Punkte; bitte vereinfachen.")
         if len(current) > 1:
             contours.append(clean(current))
-    return contours, ['SVG: 96 dpi, physische Maße und viewBox berücksichtigt; Y nach oben gespiegelt.']
+            corners.append(svg_corners(segments))
+    return contours, ['SVG: 96 dpi, physische Maße und viewBox berücksichtigt; Y nach oben gespiegelt.'], corners
 
 
 def _join(paths):
@@ -157,14 +195,18 @@ def import_profile(filename, data, unit_scale=1.):
     extension = filename.lower().rsplit('.', 1)[-1]
     try:
         if extension == 'svg':
-            contours, notes = svg_contours(data)
+            contours, notes, corners = svg_contours(data)
         elif extension == 'dxf':
             contours, notes = dxf_contours(data, unit_scale)
+            corners = None
         else:
             raise CamError("Bitte eine SVG- oder DXF-Datei wählen.")
         if not contours or len(contours) > 100 or sum(map(len, contours)) > MAX_POINTS:
             raise CamError("Keine nutzbaren Konturen oder mehr als 100 Konturen / 20000 Punkte.")
-        return {'contours': contours, 'notes': notes}
+        result = {'contours': contours, 'notes': notes}
+        if corners is not None:
+            result['corners'] = corners
+        return result
     except CamError:
         raise
     except Exception as exc:

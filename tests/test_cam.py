@@ -6,7 +6,7 @@ import unittest
 import ezdxf
 
 from app import app
-from cam import plan, synchronize, check_room
+from cam import plan, synchronize, check_room, prepared, corrected
 from profiles import CamError, import_profile
 
 
@@ -24,6 +24,74 @@ def job(**changes):
 
 
 class ImportTests(unittest.TestCase):
+    def test_svg_circles_100_and_200_mm_plan_and_export(self):
+        def circle(diameter, path=False):
+            r = diameter/2
+            shape = (f'<path d="M{diameter} {r} A{r} {r} 0 1 0 0 {r} '
+                     f'A{r} {r} 0 1 0 {diameter} {r} Z"/>' if path else
+                     f'<circle cx="{r}" cy="{r}" r="{r}"/>')
+            return import_profile('circle.svg',
+                (f'<svg xmlns="http://www.w3.org/2000/svg" width="{diameter}mm" '
+                 f'height="{diameter}mm" viewBox="0 0 {diameter} {diameter}">'
+                 f'{shape}</svg>').encode())
+        xy, uv = circle(100), circle(200)
+        self.assertNotEqual(len(xy['contours'][0]), len(uv['contours'][0]))
+        self.assertEqual(xy['corners'], [[]])
+        self.assertEqual(uv['corners'], [[]])
+        for mode in ('center', 'outer', 'inner'):
+            for partial in (False, True):
+                with self.subTest(mode=mode, partial=partial):
+                    result = plan(job(xy=xy, uv=circle(200, path=True),
+                        xy_x=-50, uv_x=-100, xy_y=100, uv_y=50, segments=4,
+                        mode=mode, burn_radius=.5, controller_confirmed=True, s_max=1000,
+                        xy_start=75 if partial else 0, xy_end=25 if partial else 100,
+                        uv_start=75 if partial else 0, uv_end=25 if partial else 100,
+                        access=mode == 'inner', entry_x=0, entry_y=150, entry_u=0, entry_v=150,
+                        exit_x=0, exit_y=150, exit_u=0, exit_v=150))
+                    self.assertIn('G1 ', result['gcode'])
+                    self.assertGreater(result['segments'], 40)
+                    # Kreisform auch bei nur vier angeforderten Segmenten erhalten.
+                    section_points = result['sections'][1:-1] if mode == 'inner' else result['sections']
+                    radius_delta = {'center': 0, 'outer': .5, 'inner': -.5}[mode]
+                    for p in section_points:
+                        self.assertAlmostEqual(math.hypot(p[0], p[1]-150), 50+radius_delta, delta=.04)
+                        self.assertAlmostEqual(math.hypot(p[2], p[3]-150), 100+radius_delta, delta=.04)
+
+    def test_svg_curve_junctions_preserve_real_corners(self):
+        def profile(size):
+            return import_profile('arch.svg',
+                (f'<svg width="{size}mm" height="{size}mm" viewBox="0 0 100 100">'
+                 '<path d="M0 0 H100 V50 C100 100 0 100 0 50 Z"/></svg>').encode())
+        xy, uv = profile(100), profile(200)
+        self.assertEqual(len(xy['corners'][0]), 2)
+        self.assertEqual(len(uv['corners'][0]), 2)
+        for mode in ('center', 'outer'):
+            with self.subTest(mode=mode):
+                data = job(xy=xy, uv=uv, mode=mode, xy_x=-50, uv_x=-100,
+                           xy_y=70, uv_y=40)
+                result = plan(data)
+                self.assertGreater(result['segments'], 40)
+                # Echte Ecken trotz unterschiedlich abgetasteter Kurve gemeinsam erreichen.
+                a, b = [corrected(prepared(data, name)[0], True, .5, mode)
+                        for name in ('xy', 'uv')]
+                for ca, cb in zip(a.corners, b.corners):
+                    self.assertTrue(any(math.dist(p, ca+cb) < 1e-6 for p in result['sections']))
+
+    def test_svg_real_corner_counts_still_rejected(self):
+        xy = import_profile('rect.svg', b'<svg><path d="M0 0 H100 V100 H0 Z"/></svg>')
+        uv = import_profile('triangle.svg', b'<svg><path d="M0 0 H100 L50 100 Z"/></svg>')
+        with self.assertRaisesRegex(CamError, 'Eckzuordnung'):
+            plan(job(xy=xy, uv=uv))
+
+    def test_svg_open_curve_offsets(self):
+        xy = import_profile('curve.svg', b'<svg><path d="M0 0 C0 100 100 100 100 0"/></svg>')
+        uv = import_profile('curve.svg', b'<svg><path d="M0 0 C0 200 200 200 200 0"/></svg>')
+        self.assertNotEqual(len(xy['contours'][0]), len(uv['contours'][0]))
+        for mode in ('left', 'right'):
+            with self.subTest(mode=mode):
+                result = plan(job(xy=xy, uv=uv, mode=mode))
+                self.assertNotEqual(result['start'], result['end'])
+
     def test_svg_units_viewbox_transform_and_hole(self):
         data = b'<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="50mm" viewBox="0 0 200 100"><g transform="translate(10 0)"><path d="M0 0 H100 V80 H0 Z M20 20 H40 V40 H20 Z"/></g></svg>'
         result = import_profile('a.svg', data)
@@ -263,6 +331,24 @@ class APITests(unittest.TestCase):
             self.assertIn('error',response.get_json())
         self.assertEqual(self.client.post('/api/import').status_code,400)
         self.assertEqual(self.client.post('/api/plan',data='{bad',content_type='application/json').status_code,400)
+
+    def test_svg_circle_upload_to_plan(self):
+        profiles = []
+        for r in (50, 100):
+            svg = f'<svg><circle r="{r}mm"/></svg>'.encode()
+            response = self.client.post('/api/import', data={'file': (io.BytesIO(svg), 'circle.svg')})
+            self.assertEqual(response.status_code, 200)
+            profiles.append(response.get_json())
+        response = self.client.post('/api/plan', json=job(xy=profiles[0], uv=profiles[1],
+            xy_x=-50, uv_x=-100, xy_y=100, uv_y=50, controller_confirmed=True, s_max=1000))
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertIn('G1 ', response.get_json()['gcode'])
+
+    def test_invalid_svg_corner_metadata(self):
+        for corners in ({}, [None], [[[float('nan'), 0]]], [[[500, 500]]], [[[0]]]):
+            with self.subTest(corners=corners):
+                response = self.client.post('/api/plan', json=job(xy={'contours': [rectangle()], 'corners': corners}))
+                self.assertEqual(response.status_code, 400)
 
     def test_request_limit(self):
         response = self.client.post('/api/import', data=b'x'*(4*1024*1024+1),content_type='multipart/form-data')

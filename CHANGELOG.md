@@ -9,6 +9,17 @@ keinen Versionswechsel.
 
 ### 0.2.1
 
+- SVG-Kreis-/Kurvenplanung korrigiert: echte Ecken aus ursprünglichen
+  Segmentübergängen von Kurvenstützpunkten unterschieden. Unterschiedlich große
+  Kreise benötigen keine identische Unterteilung mehr; Kurvenauflösung bleibt
+  auch bei geringer angeforderter Segmentzahl erhalten. Eckinformationen werden
+  durch Teilschnitt und Abbrand geführt; volle Runden exakt geschlossen.
+- Sechs Regressionstests für 100-/200-mm-Kreise (SVG-Kreis und Bogenpfad),
+  Teilschnitte, Innen-/Außenkorrektur, gemischte und offene Bezierkonturen,
+  echte Eckanzahlfehler, API-Import/Export und ungültige Eckdaten ergänzt.
+  Prüfung: 34 von 36 Tests bestanden, alle neuen Tests erfolgreich. Die beiden
+  bereits vor der Änderung reproduzierten Fehler in `test_partial_contour_start_end`
+  und `test_crossed_wire_surface` bleiben offen. Keine Hardwareprüfung.
 - Versionsstand für die direkte Arbeitsraumvorschau auf 0.2.1 angehoben;
   Projekteinstieg, Versionsverlauf und Installationshinweise aktualisiert.
 - Arbeitsraumansicht direkt bei den Blockeingaben ergänzt: Block erscheint

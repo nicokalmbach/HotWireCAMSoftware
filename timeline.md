@@ -7,6 +7,17 @@ Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt
 
 ## 0.2.1
 
+- SVG-Import um echte Eckinformationen aus den ursprünglichen Segmenten erweitert.
+  Kreise mit 100 und 200 mm Durchmesser sowie unterschiedlich abgetastete
+  SVG-Kurven werden entlang ihrer Abschnittslängen synchronisiert. Kurvenstützpunkte
+  bleiben in der gemeinsamen Bahn erhalten; echte Ecken werden weiterhin gekoppelt,
+  auch nach Abbrand. Konturschluss vollständiger Runden numerisch stabilisiert.
+- Sechs neue automatisierte Tests einschließlich Upload bis G-Code, Kreis-/Bogenpfad,
+  Teilschnitt, Innen-/Außenoffset und offenen/gemischten Bezierkonturen bestanden.
+  Gesamtprüfung: 34/36 erfolgreich. Die bereits vor der Änderung reproduzierten
+  Fehler `test_partial_contour_start_end` und `test_crossed_wire_surface` bestehen
+  weiterhin. DXF-Kurven ohne SVG-Eckinformationen bleiben bei der bisherigen
+  Stützpunktzuordnung. Keine Hardware- oder neue Browserprüfung durchgeführt.
 - Versionsnummer auf 0.2.1 gesetzt und den Fortschritt der direkten
   Arbeitsraumvorschau dieser Version zugeordnet. 0.2.0 bleibt als Stand der
   mittigen Werkstückausrichtung erhalten. Kein Release oder Tag angelegt.

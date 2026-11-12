@@ -107,6 +107,14 @@ vorher aufgelöst werden. Header-Einheiten haben Vorrang vor dem Eingabefaktor.
 
 `POST /api/plan` erhält zwei importierte Profile (`xy`, `uv`) und die Formularfelder
 als JSON. Fehlerhafte Eingaben ergeben HTTP 400 mit `error`, zu große Anfragen 413.
+SVG-Importantworten enthalten zusätzlich `corners`: je Kontur die Koordinaten
+echter Ecken an nicht tangentialen Segmentübergängen, einschließlich Konturschluss.
+Diese Informationen bleiben beim Senden des Profils erhalten. Intern trägt
+`Contour` sie durch Positionierung, Richtungswahl, Teilschnitt und Abbrandkorrektur.
+DXF und ältere Profildaten ohne `corners` verwenden weiterhin die konservative
+Eckerkennung an allen nichtkollinearen Stützpunkten. SVG-Dateien müssen nach
+dem Update erneut importiert werden; reine Linienpolygone besitzen keine
+Informationen über ursprüngliche Kurven.
 Die Antwort enthält die nominelle Achsbahn `nominal`, korrigierte Achsbahn `path`,
 Punkte in den Profilebenen `sections`, Start/Ende, Raummaße, Blockmaße (`block`), Hinweise und optional `gcode`.
 Seit 0.2.0 sind `block_width`, `block_height` und `block_span` Pflichtfelder.
@@ -118,16 +126,24 @@ nur noch als berechnete Profilebenen in `room` zurückgegeben.
 1. Gesamte Datei an ihrer unteren linken Ecke normalisieren, skalieren und im Raum
    positionieren. Eine ausgewählte Kontur je Datei verwenden. Geschlossene Konturen
    gegen den Uhrzeigersinn orientieren; danach optionale Umkehr und Start-/Endanteile.
-2. Konturen an Richtungswechseln aufteilen und die Ecken ab dem gewählten Start
-   in Laufrichtung paarweise zuordnen. Zusätzliche kollineare Punkte zählen nicht
-   als Ecken (relative Kreuzprodukt-Toleranz 1e-10); Kurvenstützpunkte zählen mit.
+2. Konturen an echten Ecken aufteilen und diese ab dem gewählten Start
+   in Laufrichtung paarweise zuordnen. Beim SVG-Import werden einseitige
+   Tangentennäherungen der ursprünglichen Segmente verglichen (Parameterabstand
+   1e-6, relative Kreuzprodukt-Toleranz 1e-4); Abflachungsstützpunkte innerhalb
+   eines Bogens oder einer Bezierkurve sind keine Ecken. Kreise können daher
+   unterschiedliche Radien und Stützpunktzahlen haben. Ohne SVG-Eckinformationen
+   zählen weiterhin alle Richtungswechsel (relative Kreuzprodukt-Toleranz 1e-10);
+   zusätzliche kollineare Punkte zählen nicht als Ecken.
    Bei unterschiedlicher Anzahl der Teilabschnitte wird die Planung abgewiesen.
    Nur innerhalb jedes Eckpaars proportional zur jeweiligen Abschnittslänge
    interpolieren: Beide Profile erreichen die nächste Ecke im selben G1-Block.
    Die längere relative Teilstrecke bestimmt die Unterteilung aus der gewünschten
-   Mindestanzahl. Eckkoordinaten werden exakt übernommen. Maximal 5999 gemeinsame
+   Mindestanzahl. Die relativen Wegpositionen aller Stützpunkte beider Abschnitte
+   werden zusätzlich gemeinsam eingefügt, um die Kurvenauflösung zu erhalten;
+   Positionen innerhalb von 1e-7 mm auf dem längeren Abschnitt werden zusammengeführt.
+   Eckkoordinaten werden exakt übernommen. Maximal 5999 gemeinsame
    Segmente; bei Überschreitung Geometrie vereinfachen. Diese konservative Zuordnung
-   setzt korrespondierende Start-/Endpunkte, Laufrichtungen und Profilunterteilungen
+   setzt korrespondierende Start-/Endpunkte, Laufrichtungen und echte Eckfolgen
    voraus; eine semantische Erkennung von Formmerkmalen ist nicht implementiert.
 3. Zuerst das vollständige **Nennprogramm als strukturierte Bewegungsblöcke** auf der
    Kontur einschließlich gerader Ein-/Ausfahrt erzeugen. Danach Abbrand anwenden:
@@ -135,7 +151,12 @@ nur noch als berechnete Profilebenen in `room` zurückgegeben.
    Ecken verwenden Mitre-Verbindungen mit dem Bibliothekslimit. Leere/zerfallene
    Offsets und stark entfernte innere Details werden abgewiesen. Den ursprünglichen
    Anfang auf die korrigierte Kontur projizieren, Start/Endanteile dort anwenden und
-   erneut über Eckpaare unterteilen. Auch durch Offsets veränderte Eckanzahlen
+   erneut über Eckpaare unterteilen. Echte SVG-Ecken werden über den Schnitt
+   der versetzten Nachbarkanten übertragen; entfernte oder durch das Mitre-Limit
+   begrenzte Ecken werden abgewiesen. Beginnt ein SVG an einer echten Ecke,
+   beginnt auch die Abbrandbahn an deren versetzter Ecke. Vollständige Runden
+   schließen mit exakt gleichen Anfangs-/Endkoordinaten, um numerische
+   Selbstüberschneidungen am Konturschluss zu vermeiden. Durch Offsets veränderte Eckanzahlen
    müssen zusammenpassen; andernfalls wird abgebrochen. Erst zum Schluss werden
    die G-Code-Textzeilen geschrieben.
 4. Der Block steht mittig in X/U und zwischen den Achsebenen, unten bei Y/V = 0.

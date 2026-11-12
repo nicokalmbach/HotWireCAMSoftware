@@ -45,6 +45,9 @@ davon sind folgende lokale CAM-Funktionen implementiert:
   X/U, Höhe Y/V und Achsebenenabstand. Illustrativ und vor dem Profilimport verfügbar.
 - Start/Ende als Weganteile, Laufrichtung und abschnittsweise Synchronisierung
   korrespondierender Ecken; unpassende Eckanzahlen werden abgewiesen.
+- SVG-Kurvenstützpunkte von echten Segmentübergangsecken unterschieden;
+  unterschiedlich große Kreise und unterschiedlich abgetastete SVG-Kurven
+  einschließlich Abbrand und Teilschnitten synchronisierbar.
 - Nennprogramm vor Abbrandkorrektur; Außen-/Innenoffsets und offene Links-/Rechtswege.
 - Innenkonturen mit gerader Ein-/Ausfahrt und benutzerdefiniertem Zugangspunkt.
 - Raum-/Achsprojektionsprüfung, Kollapsprüfung und 21 Zwischenquerschnitte.
@@ -58,9 +61,10 @@ davon sind folgende lokale CAM-Funktionen implementiert:
 
 Weiter offen: automatische Lochzuordnung und Auftragsverkettung, automatische
 Zugangsplanung, vollständiger Schneidbarkeitsnachweis, Thermik und Drahtdurchhang.
-Eine explizite Zuordnung von Formmerkmalen bei unterschiedlich unterteilten Kurven
-oder abweichenden Eckanzahlen ist ebenfalls offen; derzeit zählen alle
-nichtkollinearen Kurvenstützpunkte als Ecken.
+Eine explizite Zuordnung von Formmerkmalen bei abweichenden echten Eckanzahlen
+ist ebenfalls offen. Für DXF und Profildaten ohne SVG-Eckinformationen zählen
+weiterhin alle nichtkollinearen Stützpunkte als Ecken; eine Unterscheidung von
+Kurven und Ecken beim DXF-Import bleibt offen.
 Die Software kommuniziert weiterhin nicht mit einer Maschine.
 
 ## Linux-Betrieb und Updates

@@ -4,7 +4,7 @@ import math
 from shapely.geometry import LineString, Point, Polygon
 from shapely.geometry.polygon import orient
 
-from profiles import CamError, clean
+from profiles import CamError, Contour, clean, clean_point
 
 
 def number(data, key, low, high, default=None):
@@ -36,13 +36,21 @@ def section(points, start, end, closed):
         lengths.append(lengths[-1] + math.dist(p, q))
     distances = sorted({a, b} | {d + shift for d in lengths for shift in (0, line.length)
                                 if a < d+shift < b})
-    return [point_at(line, d, closed) for d in distances]
+    result = [point_at(line, d, closed) for d in distances]
+    if closed and abs((b-a)-line.length) < 1e-7:
+        result[-1] = result[0][:]
+    return Contour(result, getattr(points, 'corners', None))
 
 
 def corner_sections(points):
-    """An jedem Richtungswechsel trennen; kollineare Stützpunkte ignorieren."""
+    """SVG-Ecken verwenden, sonst an nichtkollinearen Richtungswechseln trennen."""
     indices = [0]
+    corners = getattr(points, 'corners', None)
     for i in range(1, len(points)-1):
+        if corners is not None:
+            if any(math.dist(points[i], corner) < 1e-6 for corner in corners):
+                indices.append(i)
+            continue
         incoming = [points[i][k]-points[i-1][k] for k in (0, 1)]
         outgoing = [points[i+1][k]-points[i][k] for k in (0, 1)]
         product = math.hypot(*incoming)*math.hypot(*outgoing)
@@ -64,18 +72,33 @@ def synchronize(a, b, count):
     parts = [corner_sections(points) for points in (a, b)]
     if len(parts[0]) != len(parts[1]):
         raise CamError('Eckzuordnung nicht eindeutig: Beide Konturen benötigen gleich viele '
-                       'Richtungswechsel im Schnittverlauf. Start/Ende, Laufrichtung und '
-                       'Profilunterteilung prüfen; auch Kurvenstützpunkte zählen als Richtungswechsel.')
+                       'echte Ecken im Schnittverlauf. Start/Ende, Laufrichtung und '
+                       'Profilunterteilung prüfen. Bei DXF oder Profildaten ohne SVG-Eckinformationen '
+                       'zählen auch nichtkollineare Stützpunkte als Ecken.')
     result = [[list(a[0])], [list(b[0])]]
     for pair in zip(*parts):
         section_lines = [LineString(points) for points in pair]
         # Die längere relative Teilstrecke bestimmt die gewünschte Auflösung.
         steps = max(1, math.ceil(count*max(line.length/whole.length
                                          for line,whole in zip(section_lines, lines))))
-        if len(result[0])+steps > 6000:
+        fractions = {i/steps for i in range(1, steps)}
+        # Alle Kurvenstützpunkte beider Seiten erhalten; auch bei kleinem segments-Wert
+        # darf aus einem Kreis kein grobes Vieleck werden.
+        for points, line in zip(pair, section_lines):
+            distance = 0.
+            for p, q in zip(points, points[1:-1]):
+                distance += math.dist(p, q)
+                fractions.add(distance/line.length)
+        merged = [0.]
+        fraction_tolerance = 1e-7/max(line.length for line in section_lines)
+        for fraction in sorted(fractions):
+            if fraction-merged[-1] > fraction_tolerance and 1-fraction > fraction_tolerance:
+                merged.append(fraction)
+        fractions = merged[1:]
+        if len(result[0])+len(fractions)+1 > 6000:
             raise CamError('Zu viele Liniensegmente; Profile bitte vereinfachen.')
         for output, points, line in zip(result, pair, section_lines):
-            output.extend(point_at(line, i*line.length/steps, False) for i in range(1, steps))
+            output.extend(point_at(line, fraction*line.length, False) for fraction in fractions)
             # Eckkoordinaten exakt übernehmen, ohne Bogenlängenrundung.
             output.append(list(points[-1]))
     return result
@@ -101,6 +124,18 @@ def prepared(data, name):
     min_y = min(p[1] for c in contours for p in c)
     contours = [[[(p[0]-min_x)*scale+x, (p[1]-min_y)*scale+y] for p in c] for c in contours]
     points = contours[index]
+    corner_data = profile.get('corners')
+    corners = None
+    if corner_data is not None:
+        if not isinstance(corner_data, list) or len(corner_data) != len(contours):
+            raise CamError('Ungültige SVG-Eckinformationen; Datei erneut importieren.')
+        selected = corner_data[index]
+        if not isinstance(selected, list) or len(selected) > len(points):
+            raise CamError('Ungültige SVG-Eckinformationen; Datei erneut importieren.')
+        corners = [clean_point(corner) for corner in selected]
+        corners = [[(p[0]-min_x)*scale+x, (p[1]-min_y)*scale+y] for p in corners]
+        if any(not any(math.dist(corner, p) < 1e-6 for p in points) for corner in corners):
+            raise CamError('SVG-Eckinformationen passen nicht zur Kontur; Datei erneut importieren.')
     closed = points[0] == points[-1]
     if closed:
         polygon = Polygon(points)
@@ -113,7 +148,35 @@ def prepared(data, name):
         points = list(reversed(points))
     start = number(data, name+'_start', 0, 100, 0)/100
     end = number(data, name+'_end', 0, 100, 100)/100
-    return points, closed, start, end, contours
+    return Contour(points, corners), closed, start, end, contours
+
+
+def offset_corners(original, offset, closed, radius, mode):
+    """Echte Ecken über den Schnitt ihrer versetzten Nachbarkanten übertragen."""
+    corners = getattr(original, 'corners', None)
+    if corners is None:
+        return Contour(offset)
+    mapped = []
+    vertices = original[:-1] if closed else original
+    sign = (1 if mode == 'left' else -1) if not closed else (
+        (1 if Polygon(original).exterior.is_ccw else -1) * (1 if mode == 'inner' else -1))
+    for corner in corners:
+        i = min(range(len(vertices)), key=lambda k: math.dist(vertices[k], corner))
+        p, q, r = vertices[i-1], vertices[i], vertices[(i+1) % len(vertices)]
+        u = [(q[k]-p[k])/math.dist(p, q) for k in (0, 1)]
+        v = [(r[k]-q[k])/math.dist(q, r) for k in (0, 1)]
+        cross = u[0]*v[1]-u[1]*v[0]
+        if abs(cross) < 1e-10:
+            raise CamError('Abbrand verändert echte Ecken; Radius reduzieren oder Profil ändern.')
+        a = [q[0]-sign*radius*u[1], q[1]+sign*radius*u[0]]
+        b = [q[0]-sign*radius*v[1], q[1]+sign*radius*v[0]]
+        t = ((b[0]-a[0])*v[1]-(b[1]-a[1])*v[0])/cross
+        expected = [a[k]+t*u[k] for k in (0, 1)]
+        nearest = min(offset, key=lambda p: math.dist(p, expected))
+        if math.dist(nearest, expected) > 1e-5:
+            raise CamError('Abbrand entfernt oder begrenzt echte Ecken; Radius reduzieren oder Profil ändern.')
+        mapped.append(list(nearest))
+    return Contour(offset, mapped)
 
 
 def corrected(points, closed, radius, mode):
@@ -129,15 +192,22 @@ def corrected(points, closed, radius, mode):
             raise CamError('Abbrand entfernt schmale Konturdetails. Radius reduzieren oder Profil ändern.')
         sign = 1 if Polygon(points).exterior.is_ccw else -1
         pts = list(map(list, orient(result, sign=sign).exterior.coords))
+        pts = offset_corners(points, pts, closed, radius, mode)
         line = LineString(pts)
         # Den ursprünglichen Start auf die korrigierte Kontur abbilden.
-        t = line.project(Point(points[0]))/line.length
+        start = points[0]
+        if pts.corners:
+            for original_corner, offset_corner in zip(points.corners, pts.corners):
+                if math.dist(original_corner, start) < 1e-6:
+                    start = offset_corner
+                    break
+        t = line.project(Point(start))/line.length
         return section(pts, t, t, True)
     if not closed and mode in ('left', 'right'):
         result = LineString(points).offset_curve(radius if mode == 'left' else -radius, join_style='mitre')
         if result.is_empty or result.geom_type != 'LineString' or not result.is_simple:
             raise CamError('Abbrandkorrektur der offenen Kontur zerfällt oder überschneidet sich.')
-        return list(map(list, result.coords))
+        return offset_corners(points, list(map(list, result.coords)), closed, radius, mode)
     raise CamError('Außen/Innen benötigt geschlossene Konturen; offene Konturen verwenden Links/Rechts oder Kontur.')
 
 
