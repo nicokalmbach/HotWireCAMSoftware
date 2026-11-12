@@ -51,6 +51,10 @@ legend { color: var(--accent); font-size: 13px; padding: 0 8px; }
 .file-field { padding: 12px; border: 1px dashed #405460; border-radius: 8px; }
 #status { padding: 16px; border-left: 3px solid var(--accent); background: var(--surface); line-height: 1.6; }
 #preview { display: block; width: 100%; height: auto; background: #101923; border: 1px solid var(--border); border-radius: 8px; }
+#preview.drag-over { outline: 3px solid var(--teal); outline-offset: 3px; }
+.workspace-import { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 16px 0; }
+.workspace-import label { flex: 1; min-width: 180px; }
+#workspace-summary { min-height: 2.5em; }
 .preview-toolbar, .preview-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
 .preview-controls { padding: 16px 0; }
 .preview-controls input { flex: 1; width: auto; }

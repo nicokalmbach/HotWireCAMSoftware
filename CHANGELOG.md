@@ -7,6 +7,21 @@ keinen Versionswechsel.
 
 ## Unveröffentlicht
 
+### 0.2.1
+
+- Versionsstand für die direkte Arbeitsraumvorschau auf 0.2.1 angehoben;
+  Projekteinstieg, Versionsverlauf und Installationshinweise aktualisiert.
+- Arbeitsraumansicht direkt bei den Blockeingaben ergänzt: Block erscheint
+  sofort mit Breite, Höhe, Länge und Abständen. SVG/DXF lassen sich dort wählen
+  oder auf die Ansicht ziehen; Zentrierung und Profilpositionen wirken direkt.
+- Konturentwurf und geprüfte Bahn getrennt dargestellt. Berechneter Drahtweg
+  erscheint an den Blockstirnflächen mit Start/Ende, Ein-/Ausfahrt und Pfeilen;
+  Regler und Wiedergabe zeigen den Draht zwischen den Führungen.
+- Erweiterter UI-Test mit Chrome außerhalb der Sandbox bestanden: Live-Block,
+  Maßlinien und Abstandsänderungen, Drop-Import, Zentrierung, Live-Profilposition,
+  Raumwarnung und Zugangsmarkierungen sowie bestehende Planung/Export-Funktionen.
+  Browserwahl `--browser chrome` ergänzt; keine neue Laufzeitabhängigkeit.
+
 ### 0.2.0
 
 - Blockbreite, Blockhöhe und Blocklänge ersetzen die manuell eingegebenen

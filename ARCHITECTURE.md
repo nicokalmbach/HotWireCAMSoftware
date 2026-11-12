@@ -20,9 +20,10 @@ gehalten und für jede Berechnung erneut gesendet.
 | `version.py` | Enthält `__version__` als zentrale Versionsnummer |
 | `templates/index.html` | Deutschsprachiges Auftragsformular und Vorschau-/Exportbereich |
 | `static/css/style.css` | Gestaltung und responsive Darstellung |
-| `static/js/cam.js` | Imports, Formularzustand, Canvas-Vorschau, Animation, `.nc`-Download |
+| `static/js/cam.js` | Imports, Formularzustand, Aufbereitung der Live-Szene, Animation, `.nc`-Download |
+| `static/js/workspace.js` | Canvas-Zeichnung von Arbeitsraum, Block, Bemaßung, Konturentwurf und berechneten Bahnen |
 | `requirements.txt` | Flask, ezdxf, svgelements und Shapely; Versionsbereiche in der Datei |
-| `tests/` | Import-, Planungs- und API-Tests sowie optionaler Edge-Browsertest |
+| `tests/` | Import-, Planungs- und API-Tests sowie optionaler Edge-/Chrome-Browsertest |
 
 ## Ablauf einer Anfrage
 
@@ -170,8 +171,33 @@ per Pfeiltasten der Maschinensteuerung vor. Die Nullpunktzuordnung über Schalte
 oder Schalterversatz muss X/U mittig und Y/V auf der Auflageebene ergeben.
 Die CAM-Anwendung übernimmt dieses Koordinatensystem in Planung und G-Code;
 Schalterauswertung, Tastatur-Jogging und Maschinenanbindung sind nicht implementiert.
-Die berechnete Canvas-Vorschau zeigt Blockstirnflächen gestrichelt und die
+Die Canvas-Vorschau zeigt Blockstirnflächen und die
 X/U-Mittellinie; das statische Maschinenmodell bleibt illustrativ.
+
+Die Canvas-Ansicht wird bereits während der Eingabe aufgebaut: Raum aus
+`width/height/span`, Block aus seinen drei Maßen und automatisch ermittelten
+Profilebenen. Halbtransparente Blockflächen und Maßlinien zeigen Breite, Höhe,
+Länge, beide Achsebenenabstände, X/U-Randabstände und oberen Freiraum.
+`cam.js` normalisiert importierte Konturen wie der Planner an der unteren linken
+Dateiecke, skaliert und verschiebt sie für die unverbindliche Sofortanzeige.
+Alle Konturen bleiben sichtbar, die gewählte wird stärker gezeichnet. Die
+Orientierung und Start-/Endanteile des Schnitts stammen erst aus der Berechnung.
+Außerhalb des Blocks liegende Nennkonturen erhalten einen Hinweis; diese
+Anzeige ersetzt die serverseitige Prüfung nicht.
+
+Dateiauswahl neben der Ansicht und Drag-and-drop nutzen dieselbe Import-API wie
+die Dateifelder. Gültige Blockhöhe und Skalierung erlauben die Zentrierung der
+gesamten Dateiausdehnung in X/U und Y/V. Eine separate UV-Datei erfordert das
+Abwählen der XY-Profilübernahme.
+
+Nach Berechnung zeichnet `workspace.js` die tatsächlichen `sections` an den
+Blockstirnflächen, die Achsbahnen aus `path` dünn an den Drahtführungen und
+optional `nominal` gestrichelt. Aktivierte Zugänge sind der erste und letzte
+Abschnitt von `sections`; Farbe und Pfeile zeigen Ein-/Ausfahrt. Der Regler
+steuert die weiße Drahtlinie aus `path`. Bei Änderungen verschwindet die geprüfte
+Bahn sofort, während Block und Konturentwurf erhalten bleiben. Ansichtswechsel
+und Reglerbewegungen verwerfen das Ergebnis nicht. Es gibt keine zusätzliche
+Anfahrt vom Maschinen-Nullpunkt; der Export beginnt wie bisher an `start`.
 
 Die Maschinenparameter enthalten ein statisches SVG-Maschinenmodell in räumlicher
 Projektion. Zwei Führungssäulen mit Schlitten und parallelen Grundschienen,

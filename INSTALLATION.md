@@ -74,9 +74,12 @@ python app.py
 
 1. Die Startseite zeigt „HotWireCamSoftware“ an.
 2. Gestaltung und Navigation werden dargestellt.
-3. Die Fußzeile zeigt die Versionsnummer aus `version.py` (aktuell `0.2.0`).
-4. „Demobeispiel laden“ wählen, anschließend „Schneidweg berechnen“.
-5. Das Drahtmodell erscheint; Schieberegler, Wiedergabe und XY-/UV-Ansicht ausprobieren.
+3. Die Fußzeile zeigt die Versionsnummer aus `version.py` (aktuell `0.2.1`).
+4. „Demobeispiel laden“ wählen: Block, Bemaßung und importierte Konturen erscheinen
+   sofort unter den Blockeingaben. Blocklänge ändern und beide Abstände prüfen.
+5. „Schneidweg berechnen“ wählen; Start/Ende, Schieberegler, Wiedergabe und
+   XY-/UV-Ansicht ausprobieren. Für sichtbare Zugangswege Ein-/Ausfahrt aktivieren
+   und gültige Zugangspunkte eintragen, anschließend neu berechnen.
 6. Alternativ `examples/profil_xy.svg` und `examples/profil_uv.svg` laden, Maße und
    Schnittparameter eingeben und den Weg berechnen. Alle Beispielwerte sind Demodaten.
 7. Ein Export benötigt zusätzlich den realen S-Maximalwert und ein passendes,
@@ -98,11 +101,20 @@ WebDriver erforderlich):
 .\.venv\Scripts\python.exe -m tests.browser_check
 ```
 
+Mit lokal installiertem Chrome alternativ:
+
+```powershell
+.\.venv\Scripts\python.exe -m tests.browser_check --browser chrome
+```
+
 Die Browserprüfung startet einen eigenen lokalen Testserver auf einem freien Port
-und Edge ohne sichtbares Fenster mit temporärem Profil unter `.tmp/`. Sie prüft
+und den gewählten Browser ohne sichtbares Fenster mit temporärem Profil unter `.tmp/`. Sie prüft
 Demoauftrag, SVG-Uploads, beidseitige Profilübernahme samt Konturwechsel und
 Wiederherstellung des separaten UV-Profils, Lochwerkzeug, Planung, Vorschau, Ansichten,
-Leistung/Export und das Verwerfen veralteter Ergebnisse. Browser-Sandboxrestriktionen können ihren Start verhindern.
+Leistung/Export und das Verwerfen veralteter Ergebnisse. Zusätzlich prüft sie
+Live-Block und Maßlinien vor dem Import, Änderungen der Abstände, Drop-Import,
+Zentrierung, sofortige Profilpositionierung und Ein-/Ausfahrtsmarkierungen.
+Browser-Sandboxrestriktionen können ihren Start verhindern.
 Dann die oben beschriebenen Schritte manuell im Browser prüfen.
 
 ## Nach Änderungen

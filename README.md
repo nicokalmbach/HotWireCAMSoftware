@@ -22,6 +22,24 @@ Eine Maschinenanbindung und thermische Simulation sind nicht implementiert. Masc
 
 „Demobeispiel laden“ füllt einen Beispielauftrag. Dessen Maße, Vorschub und Leistung sind **keine Hardwareparameter**. Importierbare Beispieldateien stehen unter [examples/](examples/). Details und Grenzen beschreibt die [Architektur](ARCHITECTURE.md).
 
+Die maßstäbliche Ansicht „Arbeitsraum & Drahtweg“ erscheint direkt unter den
+Blockeingaben: Maschinenraum bereits mit gültigen Maschinenmaßen, Block mit
+gültigen Blockmaßen. Maßlinien zeigen Blockbreite, Höhe, Länge sowie Abstände
+zu beiden Achsebenen, X/U-Freiraum je Seite und Freiraum nach oben.
+
+Dort XY oder UV als Ziel wählen und eine SVG-/DXF-Datei einfügen oder auf die
+Ansicht ziehen. Die Dateifelder unter „Profilimport“ bleiben verfügbar. Neue
+Dateien werden bei gültiger Blockhöhe anhand ihrer gesamten Ausdehnung in X/U
+und Y/V zentriert. „Profil im Block zentrieren“ richtet die Zielseite erneut aus.
+Position und Skalierung wirken direkt auf die Anzeige der Blockstirnflächen.
+Für eine eigene UV-Datei muss die Übernahme des XY-Profils ausgeschaltet sein.
+
+Gestrichelte Konturen sind Entwürfe. Erst „Schneidweg berechnen“ zeigt den
+geprüften Weg mit Abbrand, Start/Ende und aktivierter Ein-/Ausfahrt. Grün und
+Violett markieren die Zugangswege samt Richtungspfeilen; die weiße Linie zeigt
+den aktuellen Draht. Ohne aktivierten Zugang beginnt der Weg auf der Kontur.
+Die manuelle Anfahrt der Maschine wird weiterhin nicht geplant.
+
 ## Versionierung
 
 Die aktuelle Versionsnummer steht zentral in `version.py` (`__version__`).
@@ -29,7 +47,7 @@ Die Website zeigt sie automatisch in der Fußzeile an. Bei einem Versionswechsel
 diesen Wert sowie Changelog, [timeline.md](timeline.md) und betroffene Anleitungen
 aktualisieren; anschließend die Anwendung neu starten.
 
-Die aktuelle Version ist `0.2.0`, die ursprüngliche Startversion war `0.1.0`.
+Die aktuelle Version ist `0.2.1`, die ursprüngliche Startversion war `0.1.0`.
 Die Achsensteuerung für den ersten Hardware-Meilenstein steht noch aus.
 
 Seit 0.2.0 gilt X/U = 0 in der Mitte des Verfahrwegs; die Raumgrenzen sind

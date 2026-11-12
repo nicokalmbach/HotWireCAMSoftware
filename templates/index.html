@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#101923">
     <title>HotWireCamSoftware</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/workspace.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/cam.js') }}" defer></script>
 </head>
 <body>
@@ -15,8 +16,8 @@
         <div class="nav-label">Arbeitsbereich</div>
         <nav>
             <a class="nav-link active" href="#einstellungen" aria-current="location"><span class="nav-icon">01</span> Maschinenparameter</a>
-            <a class="nav-link" href="#profilimport"><span class="nav-icon">02</span> Profilimport</a>
-            <a class="nav-link" href="#vorschau"><span class="nav-icon">03</span> Schneidvorschau</a>
+            <a class="nav-link" href="#vorschau"><span class="nav-icon">02</span> Arbeitsraum &amp; Drahtweg</a>
+            <a class="nav-link" href="#profilimport"><span class="nav-icon">03</span> Profilimport</a>
             <a class="nav-link" href="#gcode"><span class="nav-icon">04</span> G-Code-Export</a>
         </nav>
         <div class="sidebar-footer"><span class="status-dot"></span> Lokale CAM-Anwendung</div>
@@ -138,6 +139,23 @@
                 <p class="helper" id="block-distances" aria-live="polite">Maschinen- und Blockmaße eingeben, um die Abstände automatisch zu berechnen.</p>
                 <p class="helper">Maschinenablauf: Kontaktschalter manuell über die Pfeiltasten der Maschinensteuerung anfahren und damit den Nullpunkt setzen. Schalterposition bzw. Schalterversatz muss zum beschriebenen Koordinatensystem passen. Diese CAM-Anwendung liest keinen Schalter und steuert keine Achsen.</p>
                 </fieldset>
+        <section class="panel preview-panel" id="vorschau">
+            <div class="panel-heading preview-heading"><h2>Arbeitsraum &amp; Drahtweg</h2></div>
+            <div class="preview-toolbar"><label>Ansicht<select id="view"><option value="wire">Räumliches Drahtmodell</option><option value="xy">Achsebene XY</option><option value="uv">Achsebene UV</option></select></label><label class="check"><input type="checkbox" id="show-nominal" checked> Nennkontur anzeigen</label></div>
+            <div class="workspace-import">
+                <label>Datei einfügen auf<select id="insert-side"><option value="xy">XY · linke Blockseite</option><option value="uv">UV · rechte Blockseite</option></select></label>
+                <button class="button button-muted" type="button" id="insert-profile">SVG/DXF einfügen</button>
+                <button class="button button-muted" type="button" id="center-profile">Profil im Block zentrieren</button>
+            </div>
+            <p class="helper">Datei wählen oder SVG/DXF direkt auf die Ansicht ziehen. Neue Dateien werden im Block zentriert. Position und Skalierung lassen sich unter „Profilimport“ ändern. Die Ansicht aktualisiert sich sofort.</p>
+            <canvas id="preview" width="1100" height="650" tabindex="0" role="img" aria-describedby="workspace-summary" aria-label="Arbeitsraum mit Block, Maßen, Profilen und Drahtweg"></canvas>
+            <p class="helper" id="workspace-summary" aria-live="polite"></p>
+        <p id="status" role="status" aria-live="polite">Maschinenparameter und Bezugspunkte festlegen, danach Profile laden.</p>
+            <div class="preview-controls"><button type="button" class="button button-muted" id="play" disabled>Abspielen</button><input id="progress" type="range" min="0" max="1" value="0" aria-label="Position auf dem Drahtweg" disabled><output id="step-label">Kein Schneidweg</output></div>
+            <p class="helper">Gelb: Block · Orange: XY · Türkis: UV · Gestrichelt: importierte Konturen / Achsbahnen · Grün: Start und Einfahrt · Violett: Ende und Ausfahrt · Weiß: aktueller Draht. Kräftige Linien zeigen den berechneten Weg an den Blockseiten. Die Wiedergabe zeigt Bewegungsschritte, keine physikalische Zeit.</p>
+            <p class="helper">Für einen Zugang außerhalb der Kontur Ein-/Ausfahrt aktivieren und die Zugangspunkte eintragen. Nach „Schneidweg berechnen“ ist der gesamte geplante Weg einschließlich dieser Verbindungen sichtbar. Ohne Ein-/Ausfahrt beginnt der Schnitt auf der Kontur; die manuelle Anfahrt ist kein berechneter Weg.</p>
+            <p id="coordinates" class="helper"></p><ul id="warnings"></ul>
+        </section>
                 <fieldset><legend>Schneidparameter</legend><div class="fields">
                     <label>Vorschub F (mm/min, XYUV-Vektor)<input name="feed" type="number" min="0.001" max="1000000" step="any" required></label>
                     <label>Schneidleistung (%)<input name="power" type="number" min="0" max="100" step="any" required></label>
@@ -164,7 +182,7 @@
             <section class="workflow" id="profilimport">
             {% for name, title in [('xy', 'XY · linkes Profil'), ('uv', 'UV · rechtes Profil')] %}
                 <article class="panel import-panel">
-                    <div class="panel-heading"><div class="step-number">02</div><h2>{{ title }}</h2></div>
+                    <div class="panel-heading"><div class="step-number">03</div><h2>{{ title }}</h2></div>
                     {% if name == 'xy' %}
                     <label class="check"><input type="checkbox" id="same-profile" aria-describedby="same-profile-help"> Dieses Profil für beide Seiten verwenden</label>
                     <p class="helper" id="same-profile-help">Datei und Konturauswahl für UV übernehmen. Position, Skalierung, Start/Ende und Laufrichtung bleiben je Seite einstellbar.</p>
@@ -188,15 +206,6 @@
             <p class="helper">Position = untere linke Ecke der gesamten Datei. Geschlossene Konturen beginnen am importierten Anfang und laufen gegen den Uhrzeigersinn. Start/Ende sind Weganteile nach Richtungswahl; gleiche Werte ergeben eine volle Runde. Ein Auftrag bearbeitet ein gewähltes Konturpaar; Innenkonturen separat planen.</p>
             <button class="button button-primary" id="calculate" type="submit">Schneidweg berechnen</button>
         </form>
-        <p id="status" role="status" aria-live="polite">Maschinenparameter und Bezugspunkte festlegen, danach Profile laden.</p>
-        <section class="panel preview-panel" id="vorschau">
-            <div class="panel-heading preview-heading"><div class="step-number">03</div><h2>Schneidvorschau</h2></div>
-            <div class="preview-toolbar"><label>Ansicht<select id="view"><option value="wire">Räumliches Drahtmodell</option><option value="xy">Achsebene XY</option><option value="uv">Achsebene UV</option></select></label><label class="check"><input type="checkbox" id="show-nominal" checked> Nennkontur anzeigen</label></div>
-            <canvas id="preview" width="1000" height="480" role="img" aria-label="Drahtmodell und Schnittweg. Nach Berechnung zeigt der Schieberegler die Drahtposition."></canvas>
-            <div class="preview-controls"><button type="button" class="button button-muted" id="play" disabled>Abspielen</button><input id="progress" type="range" min="0" max="1" value="0" aria-label="Position auf dem Drahtweg" disabled><output id="step-label">Kein Schneidweg</output></div>
-            <p class="helper">Orange: XY · Türkis: UV · Grau gestrichelt: Nennbahn · Helle Linie: aktueller Draht. Die Wiedergabe zeigt Bewegungsschritte, keine physikalische Zeit.</p>
-            <p id="coordinates" class="helper"></p><ul id="warnings"></ul>
-        </section>
         <section class="panel settings-panel" id="gcode">
             <div class="panel-heading"><div class="step-number">04</div><h2>G-Code-Export</h2></div>
             <p class="helper">Der Download enthält die korrigierte Bahn in absoluten Millimeterkoordinaten. Generisches Steuerungsprofil; vor Maschineneinsatz mit der Hardwaregruppe prüfen.</p>

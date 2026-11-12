@@ -71,6 +71,7 @@ function setProfile(name, data, filename) {
     filenames[name] = filename;
     renderProfile(name, data, filename);
     if (name === 'xy' && sameProfile.checked) updateSharedProfile();
+    draw();
 }
 function renderProfile(name, data, filename) {
     const select = document.querySelector(`#contour-${name}`);
@@ -102,6 +103,7 @@ function updateSharedProfile() {
         select.value = document.querySelector('#contour-xy').value;
         select.disabled = true;
     } else if (profiles.uv) select.value = separateUVContour;
+    draw();
 }
 sameProfile.addEventListener('change', () => {
     if (sameProfile.checked) separateUVContour = document.querySelector('#contour-uv').value || '0';
@@ -111,17 +113,32 @@ sameProfile.addEventListener('change', () => {
 document.querySelector('#contour-xy').addEventListener('change', () => {
     if (sameProfile.checked) updateSharedProfile();
 });
-for (const name of ['xy', 'uv']) {
-    document.querySelector(`#file-${name}`).addEventListener('change', async event => {
-        if (name === 'uv' && sameProfile.checked) return;
+function centerProfile(name) {
+    const profile = name === 'uv' && sameProfile.checked ? profiles.xy : profiles[name];
+    if (!profile) {statusText.textContent='Zuerst eine Profildatei einfügen.'; return;}
+    const height = Number(form.elements.block_height.value);
+    const scale = Number(form.elements[name+'_scale'].value);
+    if (!form.elements.block_height.value || !Number.isFinite(height) || height <= 0 || !Number.isFinite(scale) || scale <= 0) {
+        statusText.textContent='Zum Zentrieren gültige Blockhöhe und Skalierung eingeben.'; return;
+    }
+    const points = profile.contours.flat();
+    const xs=points.map(p=>p[0]), ys=points.map(p=>p[1]);
+    form.elements[name+'_x'].value=-(Math.max(...xs)-Math.min(...xs))*scale/2;
+    form.elements[name+'_y'].value=(height-(Math.max(...ys)-Math.min(...ys))*scale)/2;
+    invalidate();
+}
+async function loadProfile(name, file) {
+        if (name === 'uv' && sameProfile.checked) {
+            statusText.textContent='UV verwendet gerade die XY-Datei. Für eine eigene UV-Datei „Dieses Profil für beide Seiten verwenden“ abwählen.'; return;
+        }
         invalidate(); profiles[name] = null;
         filenames[name] = '';
         if (name === 'xy' && sameProfile.checked) updateSharedProfile();
         const generation = ++generations[name];
         const select = document.querySelector(`#contour-${name}`);
         select.disabled = true; select.replaceChildren();
-        const file = event.target.files[0];
         document.querySelector(`#info-${name}`).textContent = file ? 'Datei wird gelesen …' : 'Noch keine Datei geladen.';
+        draw();
         if (!file) return;
         const payload = new FormData();
         payload.append('file', file);
@@ -130,6 +147,8 @@ for (const name of ['xy', 'uv']) {
             const data = await responseJSON(await fetch('/api/import', {method: 'POST', body: payload}));
             if (generation !== generations[name]) return;
             setProfile(name, data, file.name);
+            centerProfile(name);
+            if (name === 'xy' && sameProfile.checked) centerProfile('uv');
             if (name === 'uv' && sameProfile.checked) updateSharedProfile();
             statusText.textContent = `${name.toUpperCase()}-Profil geladen. Eingaben prüfen und Schneidweg berechnen.`;
         } catch (error) {
@@ -137,8 +156,27 @@ for (const name of ['xy', 'uv']) {
             document.querySelector(`#info-${name}`).textContent = 'Import fehlgeschlagen.';
             statusText.textContent = error.message;
         }
-    });
 }
+for (const name of ['xy', 'uv']) {
+    document.querySelector(`#file-${name}`).addEventListener('change', event => loadProfile(name,event.target.files[0]));
+}
+document.querySelector('#insert-profile').addEventListener('click', () => {
+    const name=document.querySelector('#insert-side').value;
+    if(name==='uv' && sameProfile.checked) {
+        statusText.textContent='Für eine eigene UV-Datei zuerst „Dieses Profil für beide Seiten verwenden“ abwählen.';return;
+    }
+    const input=document.querySelector(`#file-${name}`);
+    input.value=''; input.click();
+});
+document.querySelector('#center-profile').addEventListener('click', () => centerProfile(document.querySelector('#insert-side').value));
+canvas.addEventListener('dragover', event => {event.preventDefault();canvas.classList.add('drag-over');});
+canvas.addEventListener('dragleave', () => canvas.classList.remove('drag-over'));
+canvas.addEventListener('drop', event => {
+    event.preventDefault();canvas.classList.remove('drag-over');
+    const files=event.dataTransfer.files;
+    if(files.length!==1) {statusText.textContent='Bitte genau eine SVG- oder DXF-Datei auf die Ansicht ziehen.';return;}
+    loadProfile(document.querySelector('#insert-side').value,files[0]);
+});
 function updateBlockDistances() {
     const values = ['width','height','span','block_width','block_height','block_span'].map(key => Number(form.elements[key].value));
     const [width,height,span,bw,bh,bs] = values;
@@ -147,7 +185,10 @@ function updateBlockDistances() {
         ? `Abstand je Seite zwischen Block und Achsebene: ${((span-bs)/2).toFixed(3)} mm. Profilebenen ab linker Achsebene: XY ${((span-bs)/2).toFixed(3)} mm, UV ${((span+bs)/2).toFixed(3)} mm. Freiraum in X/U je Seite: ${((width-bw)/2).toFixed(3)} mm.`
         : 'Gültige Maschinen- und Blockmaße eingeben. Der Block muss vollständig in den Arbeitsraum passen.';
 }
-form.addEventListener('input', () => {updateBlockDistances(); invalidate();});
+form.addEventListener('input', event => {
+    if(event.target.closest('#vorschau')) return;
+    updateBlockDistances(); invalidate();
+});
 function updateAccess() {
     document.querySelectorAll('#access-fields input').forEach(input => {
         input.disabled = !form.elements.access.checked;
@@ -155,7 +196,10 @@ function updateAccess() {
     });
     document.querySelector('#s-max').required = form.elements.controller_confirmed.checked;
 }
-form.addEventListener('change', updateAccess);
+form.addEventListener('change', event => {
+    if(event.target.closest('#vorschau')) return;
+    updateAccess(); invalidate();
+});
 form.addEventListener('submit', async event => {
     event.preventDefault(); invalidate();
     const uvProfile = sameProfile.checked ? profiles.xy : profiles.uv;
@@ -186,46 +230,50 @@ form.addEventListener('submit', async event => {
     } catch (error) {if (current === revision) statusText.textContent = error.message;}
     finally {calculate.disabled = false;}
 });
+function liveProfile(name, block) {
+    const profile = name === 'uv' && sameProfile.checked ? profiles.xy : profiles[name];
+    if (!profile || !block) return null;
+    if(['_x','_y','_scale'].some(suffix=>form.elements[name+suffix].value==='')) return null;
+    const scale = Number(form.elements[name+'_scale'].value);
+    const x = Number(form.elements[name+'_x'].value), y = Number(form.elements[name+'_y'].value);
+    if (![x,y,scale].every(Number.isFinite) || scale <= 0) return null;
+    const points = profile.contours.flat();
+    const minX = Math.min(...points.map(p=>p[0])), minY = Math.min(...points.map(p=>p[1]));
+    return {name, z:name==='xy'?block.z0:block.z1,
+        selected:Number(form.elements[name+'_contour'].value),
+        contours:profile.contours.map(c=>c.map(p=>[(p[0]-minX)*scale+x,(p[1]-minY)*scale+y]))};
+}
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#8fa1ad'; ctx.font = '16px Segoe UI';
-    if (!result) {ctx.fillText('Zwei Profile laden und Schneidweg berechnen.', 30, 48); return;}
-    const {width, height, span} = result.room;
-    const view = document.querySelector('#view').value;
-    const projection = (x,y,z) => view === 'wire' ? [x+z*.65, -y+z*.25] : [x,-y];
-    const box = [[-width/2,0],[width/2,0],[width/2,height],[-width/2,height],[-width/2,0]];
-    const corners = [0,span].flatMap(z => box.map(([x,y]) => projection(x,y,z)));
-    const xs = corners.map(p=>p[0]), ys = corners.map(p=>p[1]);
-    const minX = Math.min(...xs), minY = Math.min(...ys);
-    const scale = Math.min((canvas.width-70)/(Math.max(...xs)-minX), (canvas.height-70)/(Math.max(...ys)-minY));
-    const project = (x,y,z) => {const p=projection(x,y,z); return [35+(p[0]-minX)*scale,35+(p[1]-minY)*scale];};
-    function stroke(points, color, dashed=false, lineWidth=1) {
-        ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=lineWidth; ctx.setLineDash(dashed ? [5,5] : []);
-        points.forEach((p,i)=>i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.stroke(); ctx.setLineDash([]);
+    const read = key => form.elements[key].value === '' ? NaN : Number(form.elements[key].value);
+    const width=read('width'), height=read('height'), span=read('span');
+    const validRoom=[width,height,span].every(v=>Number.isFinite(v)&&v>=.01&&v<=1e6);
+    const room=validRoom?{width,height,span}:null;
+    const bw=read('block_width'), bh=read('block_height'), bs=read('block_span');
+    const validBlock=validRoom && [bw,bh,bs].every(Number.isFinite) && bw>=.01 && bh>=.01 && bs>=.001 && bw<=width && bh<=height && bs<=span;
+    const block=validBlock?{width:bw,height:bh,span:bs,z0:(span-bs)/2,z1:(span+bs)/2}:null;
+    const visibleProfiles=['xy','uv'].map(name=>liveProfile(name,block)).filter(Boolean);
+    const access={};
+    if(form.elements.access.checked) for(const phase of ['entry','exit']) {
+        const values=['x','y','u','v'].map(axis=>read(phase+'_'+axis));
+        if(values.every(Number.isFinite)) access[phase]=values;
     }
-    for (const z of view === 'wire' ? [0,span] : [0]) stroke(box.map(([x,y])=>project(x,y,z)), '#52636f');
-    for (const z of view === 'wire' ? [result.room.z_xy,result.room.z_uv] : [view === 'uv' ? span : 0]) {
-        const {width: bw, height: bh} = result.block;
-        stroke([[-bw/2,0],[bw/2,0],[bw/2,bh],[-bw/2,bh],[-bw/2,0]].map(([x,y])=>project(x,y,z)), '#c9ba69', true);
+    const step=Number(progress.value);
+    drawWorkspace(canvas,{room,block,profiles:visibleProfiles,result,step,
+        view:document.querySelector('#view').value,
+        showNominal:document.querySelector('#show-nominal').checked,
+        access,accessEnabled:form.elements.access.checked});
+    const outside=block && visibleProfiles.some(p=>p.contours.some(c=>c.some(([x,y])=>x < -bw/2 || x > bw/2 || y < 0 || y > bh)));
+    const summary=!room ? 'Maschinenmaße eingeben.' : !block ? 'Arbeitsraum sichtbar. Gültige Blockmaße eingeben.'
+        : `Block ${bw} × ${bh} × ${bs} mm. Abstand links/rechts zu den Achsebenen jeweils ${block.z0} mm; X/U je Seite ${(width-bw)/2} mm; oben ${height-bh} mm. ${visibleProfiles.length} Profilseite(n) eingefügt. ${outside?'Achtung: Nennkontur liegt außerhalb des Blocks. ':''}${result?'Geprüfter Drahtweg mit Start und Ende sichtbar.':'Konturentwurf, noch kein geprüfter Drahtweg.'}`;
+    const summaryElement=document.querySelector('#workspace-summary');
+    if(summaryElement.textContent!==summary) {
+        summaryElement.textContent=summary;
+        canvas.setAttribute('aria-label',summary);
     }
-    for (const z of view === 'wire' ? [0,span] : [0]) stroke([project(0,0,z),project(0,height,z)], '#697786', true);
-    if (view === 'wire') {
-        box.slice(0,4).forEach(([x,y])=>stroke([project(x,y,0),project(x,y,span)], '#283845'));
-        const every = Math.max(1, Math.floor(result.path.length/45));
-        result.path.forEach((p,i)=>{if(i%every===0) stroke([project(p[0],p[1],0),project(p[2],p[3],span)], '#354c56');});
-    }
-    for (const offset of view === 'xy' ? [0] : view === 'uv' ? [2] : [0,2]) {
-        const z = offset ? span : 0;
-        if (document.querySelector('#show-nominal').checked) stroke(result.nominal.map(p=>project(p[offset],p[offset+1],z)), '#8fa1ad', true);
-        stroke(result.path.map(p=>project(p[offset],p[offset+1],z)), offset ? '#68c6ae' : '#f0a45d', false, 2);
-    }
-    const step = Number(progress.value), p = result.path[step];
-    if (view === 'wire') stroke([project(p[0],p[1],0),project(p[2],p[3],span)], '#f1f6fa', false, 3);
-    for(const offset of view === 'xy' ? [0] : view === 'uv' ? [2] : [0,2]) {
-        ctx.beginPath(); ctx.fillStyle = '#ffffff'; ctx.arc(...project(p[offset],p[offset+1],offset ? span : 0),4,0,Math.PI*2);ctx.fill();
-    }
-    document.querySelector('#step-label').textContent = `Schritt ${step} / ${result.path.length-1}`;
-    document.querySelector('#coordinates').textContent = 'Aktuell: '+p.map((v,i)=>`${'XYUV'[i]} ${v.toFixed(3)}`).join(' · ')+' mm. Start: '+result.start.map(v=>v.toFixed(3)).join(' / ')+' · Ende: '+result.end.map(v=>v.toFixed(3)).join(' / ');
+    if(!result) return;
+    const p=result.path[step];
+    document.querySelector('#step-label').textContent=`Schritt ${step} / ${result.path.length-1}`;
+    document.querySelector('#coordinates').textContent='Aktuell: '+p.map((v,i)=>`${'XYUV'[i]} ${v.toFixed(3)}`).join(' · ')+' mm. Start: '+result.start.map(v=>v.toFixed(3)).join(' / ')+' · Ende: '+result.end.map(v=>v.toFixed(3)).join(' / ');
 }
 progress.addEventListener('input', draw);
 document.querySelector('#view').addEventListener('change', draw);
@@ -265,6 +313,7 @@ document.querySelector('#demo').addEventListener('click', () => {
     updateSharedProfile();
     updateAccess();
     updateBlockDistances();
+    draw();
     statusText.textContent='Demobeispiel geladen. Alle Maße und Schnittparameter sind ausschließlich Beispieldaten. Schneidweg berechnen, um die Vorschau zu öffnen.';
 });
 updateBlockDistances();

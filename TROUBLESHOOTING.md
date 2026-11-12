@@ -32,6 +32,8 @@ Der Installer überschreibt keine vorhandenen Benutzer, Installationen oder Dien
 | Fehlendes Modul ezdxf, shapely oder svgelements | Abhängigkeiten mit `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` aktualisieren. |
 | ezdxf meldet fehlendes Cache-Verzeichnis | Der optionale Schriftcache kann in eingeschränkten Umgebungen nicht geschrieben werden. Für die hier unterstützten Geometrien wird kein Schriftcache benötigt; Text wird nicht importiert. |
 | Optionaler Browsertest startet nicht | Microsoft Edge muss am im Testskript angegebenen Standardpfad installiert sein. Bei Browser-/GPU-Sandboxfehlern die manuelle Funktionsprüfung aus INSTALLATION.md verwenden. |
+| Block oder importierte Kontur fehlt in der Sofortansicht | Gültige Maschinen- und Blockmaße eingeben. Für die Profilanzeige werden zusätzlich Position und positive Skalierung benötigt. Die Zielseite beim Direktimport prüfen; UV verwendet bei aktivierter Profilübernahme die XY-Datei. Außen liegende Profile werden mit Hinweis angezeigt. |
+| Einfahrt ist nicht als Weg eingezeichnet | Vor der Berechnung werden nur vollständig eingegebene Zugangspunkte als Entwurf markiert. Ein-/Ausfahrt aktivieren, alle Zugangspunkte eintragen und den Weg neu berechnen. Ohne diese Option beginnt der Weg auf der Kontur. |
 
 ## Bestätigte DLL-Blockierung unter Windows
 
@@ -69,6 +71,9 @@ Beim Prüfstand 0.2.0 bestehen 28 von 30 Tests. Die Fehler in
 Tests aus dem unveränderten vorherigen Git-Stand reproduzierbar. Eine Lösung
 ist noch offen. Der Edge-Test lieferte in dieser Prüfung keinen DOM-Bericht;
 das ist kein erfolgreicher Nachweis der Browserdarstellung.
+Die für 0.2.1 erweiterte UI-Prüfung konnte mit lokal installiertem Chrome
+(`--browser chrome`) außerhalb der Sandbox erfolgreich ausgeführt werden,
+einschließlich Sofortanzeige, Drop-Import, Zentrierung und Ein-/Ausfahrt.
 
 Bei ungelösten Problemen die Python-Version, Anwendungsversion, ausgeführten Befehle,
 Fehlermeldung sowie erwartetes und tatsächliches Verhalten notieren. Keine Zugangsdaten

@@ -5,6 +5,25 @@ Für jede neue Version einen eigenen Eintrag mit den tatsächlich durchgeführte
 selben Arbeitsschritt aktualisieren. Eine Versionsnummer dokumentiert den
 Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt.
 
+## 0.2.1
+
+- Versionsnummer auf 0.2.1 gesetzt und den Fortschritt der direkten
+  Arbeitsraumvorschau dieser Version zugeordnet. 0.2.0 bleibt als Stand der
+  mittigen Werkstückausrichtung erhalten. Kein Release oder Tag angelegt.
+- Arbeitsraumansicht unter den Blockeingaben aufgebaut: maßstäblicher Block
+  samt Maßlinien für drei Maße, beide Achsebenenabstände, X/U-Freiraum und
+  Abstand nach oben erscheint ohne Profil oder Planungsauftrag.
+- SVG/DXF direkt in der Ansicht per Dateiauswahl oder Drag-and-drop einfügen;
+  Zentrierung in X/U und Y/V anhand der gesamten Datei. Live-Änderungen über
+  Positions-/Skalierungsfelder, Hervorhebung der Konturauswahl und Raumhinweis.
+- Berechnete Schnittwege auf den Blockstirnflächen, dünne Führungsbahnen,
+  Start/Ende und Ein-/Ausfahrt mit Richtungspfeilen sowie aktuelle Drahtposition
+  dargestellt. Änderungen erhalten den Entwurf und verwerfen die geprüfte Bahn.
+- Live-Zeichnung in `static/js/workspace.js` ausgelagert. Erweiterter Chrome-
+  Browsertest außerhalb der Sandbox bestanden, einschließlich Drop-Import,
+  Sofortbemaßung, Positionierung, Zugangspunkten und bestehendem Exportablauf.
+  Gezeichnetes Canvas zur Kontrolle angesehen; keine Hardwareprüfung.
+
 ## 0.2.0
 
 - Mittige Werkstückausrichtung umgesetzt: Blockbreite X/U, Blockhöhe Y/V und
