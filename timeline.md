@@ -7,6 +7,13 @@ Projektstand; ein GitHub-Release oder Tag ist dadurch nicht automatisch erstellt
 
 ## 0.2.5
 
+- Künftige Versionsziele in der Roadmap an den tatsächlichen CAM-Stand
+  angepasst und im README zusammengefasst: geplant sind Maschinenanbindung
+  ab 0.3.0, Einzelachssteuerung und Referenzfahrt aller vier Achsen ab 0.4.0
+  sowie reale koordinierte Programmausführung ab 0.5.0. Weitere geplante Ziele
+  für Fehlerbehandlung, Schnittvalidierung, Systemtests und Betriebsreife
+  konkretisiert. Nur Dokumentation geändert; keine Maschinenanbindung
+  implementiert und kein Versionswechsel vorgenommen.
 - Einschalten der Heizung mindestens 10 mm vor Materialeintritt implementiert.
   Bei automatischen Randzugängen gemeinsamer Einschaltpunkt 10 mm normal
   außerhalb der Rohteilfläche, dann G1 mit Schnittvorschub über die Luftstrecke

@@ -1,8 +1,19 @@
 # Roadmap
 
-Die Versionsziele stammen aus der bisherigen Projektplanung. Sie sind geplante
-Meilensteine ohne festgelegte Termine. Die Anwendung trägt Version `0.2.5`,
-der ursprüngliche Hardware-Meilenstein 0.1.0 ist aber erst teilweise umgesetzt.
+Die Anwendung trägt Version `0.2.5`. Sie berechnet bereits synchronisierte
+Vierachs-Drahtwege, erzeugt XYUV-G-Code und gibt den eigenen Export in der
+Vorschau wieder. Eine Verbindung zur Maschine, reale Achsbewegungen und
+Referenzfahrten sind noch nicht implementiert.
+
+Die künftigen Versionsziele sind auf diesen Stand abgestimmt. Es sind geplante
+Meilensteine ohne festgelegte Termine; Schnittstelle und Zuständigkeiten müssen
+mit der Hardwaregruppe abgestimmt werden. Die Versionsnummer wird durch diese
+Planungsänderung nicht erhöht.
+
+## Bisheriger Stand bis 0.2.5
+
+Die Einträge bis 0.2.0 enthalten auch die ursprünglichen Hardwareziele. Ihre
+offenen Anteile werden in der künftigen Planung ab 0.3.0 weitergeführt.
 
 | Zielversion | Schwerpunkt | Stand |
 | --- | --- | --- |
@@ -14,29 +25,46 @@ der ursprüngliche Hardware-Meilenstein 0.1.0 ist aber erst teilweise umgesetzt.
 | 0.2.3 | Maschinenbezug und aufliegendes Rohteil | G0 ab Kontaktschalter-Maschinennullpunkt, getrennte Bezugspunkte und Zugänge nur oben/seitlich; Unterseite gesperrt |
 | 0.2.4 | G-Code-Prüfung und Programmwiedergabe | Eigenen Export rücklesen und gegen Planung prüfen; G1-Ein-/Ausfahrt kontinuierlich nach F, Heizstatus aus M3/M5 |
 | 0.2.5 | Heizung vor Materialeintritt | M3/S mindestens 10 mm vor Eintritt, äußerer G1-Heizvorlauf, Freiraumprüfung und Wiedergabe aus Code |
-| 0.3.0 | Referenzfahrt | Geplant |
-| 0.4.0 | Mehrere Achsen | Geplant |
-| 0.5.0 | Koordinierte Bewegungen | Geplant |
-| 0.6.0 | Fehlerbehandlung | Geplant |
-| 0.7.0 | Kommunikation | Geplant |
-| 0.8.0 | Erweiterte Tests | Geplant |
-| 0.9.0 | Beta | Geplant |
-| 1.0.0 | Stabile Version | Geplant |
+
+## Künftige Versionsziele
+
+| Zielversion | Schwerpunkt | Geplanter Umfang |
+| --- | --- | --- |
+| 0.3.0 | Maschinenanbindung und Status | Kommunikationsschnittstelle mit der Hardwaregruppe festlegen und anbinden; Verbindungszustand, Rückmeldungen und unterstützten G-Code-Dialekt prüfen. Grundlegende Verbindungsfehler von Beginn an behandeln. |
+| 0.4.0 | Einzelachssteuerung und Referenzfahrt für X/Y/U/V | Alle vier realen Achsen einzeln manuell verfahren; Schalterzustände auswerten und Referenzfahrt mit definiertem Maschinennullpunkt umsetzen. Achsrichtungen, Verfahrgrenzen und Freigaben mit der Hardwaregruppe prüfen. |
+| 0.5.0 | Koordinierte XYUV-Programmausführung | Den bereits erzeugten G-Code an der Maschine ausführen; abgestimmte Vierachsbewegungen, Vorschubinterpretation und M3/S/M5-Zuordnung prüfen. Programmstart, Halt und Abbruch sowie tatsächlichen Ausführungsstatus anbinden. |
+| 0.6.0 | Robuster Maschinenbetrieb und Fehlerbehandlung | Verhalten bei Verbindungsabbruch, Schalter- und Steuerungsfehlern ausarbeiten; Bewegungs- und Heizfreigaben sowie Wiederanlauf nach Fehlern mit der Hardwaregruppe abstimmen und prüfen. |
+| 0.7.0 | Praktische Schnittvalidierung und Parameterabgleich | Geplante Bahn und reale Schnitte vergleichen; Maschinenmaße, Vorschub, Heizleistung, Heizvorlauf und materialabhängigen Abbrand praktisch prüfen und dokumentieren. Grenzen durch Thermik und Drahtdurchhang erfassen. |
+| 0.8.0 | Systemtests und Betriebsvalidierung | Gesamtablauf vom Profilimport bis zum Schnitt einschließlich Fehlerfällen prüfen; offene Regressionen bearbeiten, Debian-13-LXC-Installation und LAN-Betrieb vollständig prüfen sowie Update und Wiederherstellung umsetzen und testen. |
+| 0.9.0 | Beta im abgestimmten Maschinenbetrieb | Einen festgelegten Funktionsumfang unter realen Einsatzbedingungen erproben, Rückmeldungen einarbeiten und bekannte Einschränkungen dokumentieren. |
+| 1.0.0 | Abgenommener Funktionsumfang und stabiler Betrieb | Vereinbarte Prüfkriterien für CAM, Maschinenanbindung und Betrieb erfüllen; Bedienung, Installation und Fehlerbehebung für die unterstützte Konfiguration abschließen. |
+
+X/Y bewegen ein Drahtende horizontal und vertikal, U/V das andere. 0.4.0
+betrifft das einzelne Verfahren und Referenzieren dieser realen Achsen; 0.5.0
+betrifft ihre koordinierte Ausführung durch die Maschinensteuerung. Die
+Vierachsplanung, Synchronisierung der Profile und G-Code-Wiedergabe sind bereits
+Teil des CAM-Stands 0.2.5.
+
+Fehlerbehandlung und passende Tests gehören zu jedem Umsetzungsschritt; 0.6.0
+vertieft den robusten Betrieb, 0.8.0 prüft das Zusammenspiel des Gesamtsystems.
+Die praktische Erfassung thermischer Grenzen in 0.7.0 bedeutet noch keine
+Implementierung einer Thermiksimulation oder Drahtdurchhangkompensation.
 
 ## Nächste Abstimmungen und Schritte
 
 - Mit der Hardwaregruppe Profilformate, Einheiten, Achsen und Maschinenparameter klären.
 - Schnittstelle und Zuständigkeiten für die Maschinenkommunikation abstimmen.
-  Kommunikation steht bisher bei `0.7.0`; die für frühere Achsenfunktionen nötige
-  Schnittstelle muss vorher geklärt werden.
-- Anforderungen und Prüfkriterien für den ersten Achsen-Meilenstein festhalten.
+  Die grundlegende Anbindung ist als Voraussetzung für reale Achsbewegungen
+  jetzt bei `0.3.0` eingeplant.
+- Anforderungen und Prüfkriterien für Einzelachssteuerung und Referenzfahrt
+  aller vier Achsen in `0.4.0` festhalten, einschließlich Schaltern und Freigaben.
 - G-Code-Dialekt, F-Vorschubinterpretation und M3/S/M5-Zuordnung zum Stromregler
   bestätigen; Maschinenmaße und Material-Abbrand praktisch ermitteln.
 
 ## Umgesetzte CAM-Funktionen (Stand 0.2.5)
 
-Die bisherige Zielversionstabelle beschreibt Hardware-Meilensteine. Unabhängig
-davon sind folgende lokale CAM-Funktionen implementiert:
+Folgende lokale CAM-Funktionen sind bereits implementiert und bilden die
+Grundlage für die geplante Maschinenanbindung:
 
 - Zwei SVG-/DXF-Profile, Einheitenumrechnung und Auswahl einzelner Konturen.
 - Wahlweise XY-Datei und Kontur für beide Seiten verwenden; gekoppelte Zentren
@@ -101,7 +129,8 @@ Die Software kommuniziert weiterhin nicht mit einer Maschine.
 - Offen: vollständige Installation und LAN-Zugriff auf dem Debian-13-Zielcontainer
   prüfen; Installer-Dateien auf GitHub bereitstellen.
 - Geplant: separates Update-Script mit Prüfung, Sicherung und Wiederherstellung.
-  Der Installer speichert dafür bereits Installationseinstellungen und Git-Commit.
+  Umsetzung und Betriebsprüfung sind dem Ziel `0.8.0` zugeordnet. Der Installer
+  speichert dafür bereits Installationseinstellungen und Git-Commit.
 - Bei jeder neuen Version [timeline.md](timeline.md) und Changelog mitpflegen.
 
 ## Begleitende Dokumentation

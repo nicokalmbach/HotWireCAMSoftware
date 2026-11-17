@@ -9,6 +9,13 @@ keinen Versionswechsel.
 
 ### 0.2.5
 
+- Künftige Roadmap-Ziele ab 0.3.0 an den vorhandenen Vierachs-CAM-Stand
+  angepasst: Maschinenkommunikation vorgezogen, Einzelachssteuerung und
+  Referenzfahrt für X/Y/U/V konkretisiert und reale Programmausführung von
+  vorhandener Planung/Wiedergabe abgegrenzt. Folgeschritte für robusten Betrieb,
+  praktische Schnittvalidierung, Systemtests, Beta und stabilen Betrieb benannt.
+  README und Versionsverlauf entsprechend ergänzt; reine Planungsänderung
+  ohne Versionswechsel oder neue Maschinenfunktionen.
 - M3/S mindestens 10 mm vor Materialeintritt: G0 endet am äußeren Einschaltpunkt,
   anschließend G1 mit Schnittvorschub zur Rohteilkante und weiter ins Material.
   Automatisch gewählte Randzugänge erhalten auf beiden Seiten einen parallelen,

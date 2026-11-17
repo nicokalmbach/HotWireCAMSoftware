@@ -70,7 +70,10 @@ diesen Wert sowie Changelog, [timeline.md](timeline.md) und betroffene Anleitung
 aktualisieren; anschließend die Anwendung neu starten.
 
 Die aktuelle Version ist `0.2.5`, die ursprüngliche Startversion war `0.1.0`.
-Die Achsensteuerung für den ersten Hardware-Meilenstein steht noch aus.
+Die CAM-Planung berücksichtigt bereits alle vier Achsen X/Y/U/V. Als nächste
+Meilensteine sind Maschinenanbindung und Status (0.3.0), Einzelachssteuerung
+und Referenzfahrt aller vier Achsen (0.4.0) sowie die koordinierte Ausführung
+des erzeugten G-Codes an der Maschine (0.5.0) geplant.
 
 Seit 0.2.0 gilt X/U = 0 in der Mitte des Verfahrwegs; die Raumgrenzen sind
 `−Breite/2` bis `+Breite/2`. Y/V beginnt auf der Auflageebene bei 0 und reicht
